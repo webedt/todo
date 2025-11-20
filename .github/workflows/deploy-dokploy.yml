@@ -450,7 +450,7 @@ jobs:
                     \"https\": true,
                     \"certificateType\": \"letsencrypt\",
                     \"domainType\": \"application\",
-                    \"stripPrefix\": true
+                    \"stripPath\": true
                   }
                 }")
 
