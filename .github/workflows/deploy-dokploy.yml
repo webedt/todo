@@ -429,36 +429,6 @@ jobs:
             elif [ "$DOMAIN_COUNT" -eq 1 ]; then
               echo "ℹ️  Domain already exists: https://${DOMAIN}${PATH_PREFIX}"
               DOMAIN_EXISTS="true"
-
-              # Get the existing domain ID to update it
-              EXISTING_DOMAIN_ID=$(echo "$DOMAIN_IDS" | head -n1)
-
-              # Update the existing domain to ensure stripPath is enabled
-              echo "🔧 Updating domain to enable Strip Path..."
-              UPDATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X 'POST' \
-                "${DOKPLOY_URL}/api/trpc/domain.update" \
-                -H 'accept: application/json' \
-                -H 'Content-Type: application/json' \
-                -H "x-api-key: ${DOKPLOY_API_KEY}" \
-                -d "{
-                  \"json\": {
-                    \"domainId\": \"${EXISTING_DOMAIN_ID}\",
-                    \"host\": \"${DOMAIN}\",
-                    \"path\": \"${PATH_PREFIX}\",
-                    \"port\": 3000,
-                    \"https\": true,
-                    \"certificateType\": \"letsencrypt\",
-                    \"domainType\": \"application\",
-                    \"stripPath\": true
-                  }
-                }")
-
-              UPDATE_HTTP_CODE=$(echo "$UPDATE_RESPONSE" | tail -n1)
-              if [ "$UPDATE_HTTP_CODE" -ge 200 ] && [ "$UPDATE_HTTP_CODE" -lt 300 ]; then
-                echo "✅ Domain updated with Strip Path enabled"
-              else
-                echo "⚠️  Warning: Failed to update domain (HTTP ${UPDATE_HTTP_CODE})"
-              fi
             else
               DOMAIN_EXISTS="false"
             fi
