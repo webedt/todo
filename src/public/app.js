@@ -1,38 +1,74 @@
 // User session management
-let currentUser = null;
+let currentUserId = null;
+let currentUserDisplayName = null;
 
-function getCurrentUser() {
-    if (!currentUser) {
-        const stored = localStorage.getItem('todoAppUser');
-        if (stored) {
-            const userData = JSON.parse(stored);
-            if (userData.rememberMe) {
-                currentUser = userData.userName;
-            }
-        }
+function getUserIdFromUrl() {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#/')) {
+        return hash.substring(2); // Remove '#/'
     }
-    return currentUser;
+    return null;
 }
 
-function setCurrentUser(userName, rememberMe = false) {
-    currentUser = userName;
-    if (rememberMe) {
-        localStorage.setItem('todoAppUser', JSON.stringify({ userName, rememberMe }));
-    } else {
-        localStorage.removeItem('todoAppUser');
+function setUrlWithUserId(userId) {
+    window.location.hash = `#/${userId}`;
+}
+
+async function loadUserFromUrl() {
+    const userId = getUserIdFromUrl();
+    if (!userId) return null;
+
+    try {
+        const res = await fetch(`./api/users/${userId}`);
+        if (res.ok) {
+            const user = await res.json();
+            currentUserId = user.userId;
+            currentUserDisplayName = user.displayName;
+            return user;
+        }
+    } catch (error) {
+        console.error('Failed to load user:', error);
     }
-    updateTitle();
+    return null;
+}
+
+async function createUserAndRedirect(displayName, rememberMe = false) {
+    try {
+        const res = await fetch('./api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ displayName })
+        });
+
+        if (res.ok) {
+            const user = await res.json();
+            currentUserId = user.userId;
+            currentUserDisplayName = user.displayName;
+
+            if (rememberMe) {
+                localStorage.setItem('todoAppUserId', user.userId);
+            }
+
+            setUrlWithUserId(user.userId);
+            return user;
+        }
+    } catch (error) {
+        console.error('Failed to create user:', error);
+    }
+    return null;
 }
 
 function clearCurrentUser() {
-    currentUser = null;
-    localStorage.removeItem('todoAppUser');
+    currentUserId = null;
+    currentUserDisplayName = null;
+    localStorage.removeItem('todoAppUserId');
+    window.location.hash = '';
 }
 
 function updateTitle() {
     const title = document.getElementById('app-title');
-    if (currentUser) {
-        title.textContent = `📝 ${currentUser} Todos`;
+    if (currentUserDisplayName) {
+        title.textContent = `📝 ${currentUserDisplayName}'s Todos`;
     } else {
         title.textContent = '📝 Todo App';
     }
@@ -41,29 +77,25 @@ function updateTitle() {
 // API helper functions
 const API = {
     async getTodos() {
-        const userName = getCurrentUser();
-        const res = await fetch(`./api/todos?userName=${encodeURIComponent(userName)}`);
+        const res = await fetch(`./api/todos?userName=${encodeURIComponent(currentUserId)}`);
         return res.json();
     },
 
     async getUncompletedTodos() {
-        const userName = getCurrentUser();
-        const res = await fetch(`./api/todos/uncompleted?userName=${encodeURIComponent(userName)}`);
+        const res = await fetch(`./api/todos/uncompleted?userName=${encodeURIComponent(currentUserId)}`);
         return res.json();
     },
 
     async getCompletedTodos() {
-        const userName = getCurrentUser();
-        const res = await fetch(`./api/todos/completed?userName=${encodeURIComponent(userName)}`);
+        const res = await fetch(`./api/todos/completed?userName=${encodeURIComponent(currentUserId)}`);
         return res.json();
     },
 
     async addTodo(title) {
-        const userName = getCurrentUser();
         const res = await fetch('./api/todos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, userName })
+            body: JSON.stringify({ title, userName: currentUserId })
         });
         return res.json();
     },
@@ -91,8 +123,7 @@ const API = {
     },
 
     async searchTodos(query) {
-        const userName = getCurrentUser();
-        const res = await fetch(`./api/todos/search?q=${encodeURIComponent(query)}&userName=${encodeURIComponent(userName)}`);
+        const res = await fetch(`./api/todos/search?q=${encodeURIComponent(query)}&userName=${encodeURIComponent(currentUserId)}`);
         return res.json();
     },
 
@@ -347,12 +378,16 @@ function hideNameModal() {
 async function handleNameSubmit() {
     const nameInput = document.getElementById('name-input');
     const rememberMe = document.getElementById('remember-me').checked;
-    const userName = nameInput.value.trim();
+    const displayName = nameInput.value.trim();
 
-    if (userName) {
-        setCurrentUser(userName, rememberMe);
-        hideNameModal();
-        await setupAppAfterLogin();
+    if (displayName) {
+        const user = await createUserAndRedirect(displayName, rememberMe);
+        if (user) {
+            hideNameModal();
+            await setupAppAfterLogin();
+        } else {
+            alert('Failed to create user. Please try again.');
+        }
     } else {
         nameInput.focus();
     }
@@ -545,8 +580,31 @@ async function init() {
         showNameModal();
     });
 
-    // Check if user is already logged in
-    const user = getCurrentUser();
+    // Handle URL hash changes (when user navigates back/forward)
+    window.addEventListener('hashchange', async () => {
+        const userId = getUserIdFromUrl();
+        if (userId && userId !== currentUserId) {
+            const user = await loadUserFromUrl();
+            if (user) {
+                await setupAppAfterLogin();
+            } else {
+                showNameModal();
+            }
+        }
+    });
+
+    // Check if user ID is in URL
+    let user = await loadUserFromUrl();
+
+    // If not in URL, check if user is remembered
+    if (!user) {
+        const rememberedUserId = localStorage.getItem('todoAppUserId');
+        if (rememberedUserId) {
+            setUrlWithUserId(rememberedUserId);
+            user = await loadUserFromUrl();
+        }
+    }
+
     if (!user) {
         showNameModal();
         return; // Don't load todos until user enters name
