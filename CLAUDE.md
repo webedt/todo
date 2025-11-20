@@ -40,6 +40,37 @@ The application deploys to Dokploy with the following configuration:
 3. **Port**: 3000
 4. **HTTPS**: Let's Encrypt certificates automatically provisioned
 
+### Critical Path Requirements
+
+**IMPORTANT**: All static assets and API calls MUST use relative paths (starting with `./`) to work correctly with Strip Path:
+
+**Static Assets in HTML:**
+- ✅ Correct: `<link rel="stylesheet" href="./styles.css">`
+- ❌ Wrong: `<link rel="stylesheet" href="/styles.css">`
+- ✅ Correct: `<script src="./app.js"></script>`
+- ❌ Wrong: `<script src="/app.js"></script>`
+
+**API Calls in JavaScript:**
+- ✅ Correct: `fetch('./api/todos')`
+- ❌ Wrong: `fetch('/api/todos')`
+- ✅ Correct: `fetch('./api/theme')`
+- ❌ Wrong: `fetch('/api/theme')`
+
+**Why Relative Paths Are Required:**
+
+When deployed at `https://github.etdofresh.com/webedt/todo/main/`:
+- Relative path `./api/theme` → `https://github.etdofresh.com/webedt/todo/main/api/theme`
+- Traefik matches path prefix `/webedt/todo/main/`
+- Strip Path removes `/webedt/todo/main/`
+- Express receives `/api/theme` ✓
+
+If using absolute paths:
+- Absolute path `/api/theme` → `https://github.etdofresh.com/api/theme`
+- No path prefix → Traefik doesn't route to container
+- Returns 404 ❌
+
+**DO NOT use `<base>` tag:** The `<base href>` tag affects ALL URL resolution including absolute paths, which breaks the routing
+
 ### GitHub Actions
 
 The `.github/workflows/deploy-dokploy.yml` file automatically:
