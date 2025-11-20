@@ -344,7 +344,7 @@ function hideNameModal() {
 }
 
 // Handle name submission
-function handleNameSubmit() {
+async function handleNameSubmit() {
     const nameInput = document.getElementById('name-input');
     const rememberMe = document.getElementById('remember-me').checked;
     const userName = nameInput.value.trim();
@@ -352,10 +352,80 @@ function handleNameSubmit() {
     if (userName) {
         setCurrentUser(userName, rememberMe);
         hideNameModal();
-        loadTodos();
+        await setupAppAfterLogin();
     } else {
         nameInput.focus();
     }
+}
+
+// Setup app functionality after user login
+async function setupAppAfterLogin() {
+    updateTitle();
+
+    // Load todos
+    await loadTodos();
+
+    // Setup real-time sync
+    setupSSE();
+
+    // Add todo event
+    const addBtn = document.getElementById('add-btn');
+    const newTodoInput = document.getElementById('new-todo');
+
+    const addTodo = async () => {
+        const title = newTodoInput.value.trim();
+        if (title) {
+            await API.addTodo(title);
+            newTodoInput.value = '';
+            await loadTodos();
+        }
+    };
+
+    addBtn.addEventListener('click', addTodo);
+    newTodoInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addTodo();
+        }
+    });
+
+    // Theme change event
+    document.getElementById('theme-select').addEventListener('change', async (e) => {
+        const theme = e.target.value;
+        await API.setTheme(theme);
+        document.body.dataset.theme = theme;
+    });
+
+    // Search event
+    document.getElementById('search').addEventListener('input', async () => {
+        await loadTodos();
+    });
+
+    // Sort event
+    document.getElementById('sort-select').addEventListener('change', async () => {
+        await loadTodos();
+    });
+
+    // Completed section toggle
+    const completedHeader = document.getElementById('completed-header');
+    const completedList = document.getElementById('completed-list');
+
+    completedHeader.addEventListener('click', () => {
+        completedList.classList.toggle('collapsed');
+        completedHeader.classList.toggle('collapsed');
+    });
+
+    // Clear completed todos
+    const clearCompletedBtn = document.getElementById('clear-completed-btn');
+    clearCompletedBtn.addEventListener('click', async () => {
+        const completedTodos = await API.getCompletedTodos();
+        if (completedTodos.length === 0) {
+            return;
+        }
+        if (confirm(`Clear ${completedTodos.length} completed todo(s)? They will remain in the database but won't be visible.`)) {
+            await API.clearCompletedTodos();
+            await loadTodos();
+        }
+    });
 }
 
 // Setup Server-Sent Events for real-time updates
@@ -412,68 +482,7 @@ async function init() {
     document.body.dataset.theme = theme;
     document.getElementById('theme-select').value = theme;
 
-    // Check if user is already logged in
-    const user = getCurrentUser();
-    if (!user) {
-        showNameModal();
-        return; // Don't load todos until user enters name
-    }
-
-    updateTitle();
-
-    // Load todos
-    await loadTodos();
-
-    // Setup real-time sync
-    setupSSE();
-
-    // Add todo event
-    const addBtn = document.getElementById('add-btn');
-    const newTodoInput = document.getElementById('new-todo');
-
-    const addTodo = async () => {
-        const title = newTodoInput.value.trim();
-        if (title) {
-            await API.addTodo(title);
-            newTodoInput.value = '';
-            await loadTodos();
-        }
-    };
-
-    addBtn.addEventListener('click', addTodo);
-    newTodoInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            addTodo();
-        }
-    });
-
-    // Theme change event
-    document.getElementById('theme-select').addEventListener('change', async (e) => {
-        const theme = e.target.value;
-        await API.setTheme(theme);
-        document.body.dataset.theme = theme;
-    });
-
-    // Search event
-    document.getElementById('search').addEventListener('input', async () => {
-        await loadTodos();
-    });
-
-    // Sort event
-    document.getElementById('sort-select').addEventListener('change', async () => {
-        await loadTodos();
-    });
-
-    // Completed section toggle
-    const completedHeader = document.getElementById('completed-header');
-    const completedList = document.getElementById('completed-list');
-
-    completedHeader.addEventListener('click', () => {
-        completedList.classList.toggle('collapsed');
-        completedHeader.classList.toggle('collapsed');
-    });
-
-    // Name modal submit
+    // Set up name modal event listeners (must be set up before checking user)
     document.getElementById('name-submit').addEventListener('click', handleNameSubmit);
     document.getElementById('name-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -487,18 +496,15 @@ async function init() {
         showNameModal();
     });
 
-    // Clear completed todos
-    const clearCompletedBtn = document.getElementById('clear-completed-btn');
-    clearCompletedBtn.addEventListener('click', async () => {
-        const completedTodos = await API.getCompletedTodos();
-        if (completedTodos.length === 0) {
-            return;
-        }
-        if (confirm(`Clear ${completedTodos.length} completed todo(s)? They will remain in the database but won't be visible.`)) {
-            await API.clearCompletedTodos();
-            await loadTodos();
-        }
-    });
+    // Check if user is already logged in
+    const user = getCurrentUser();
+    if (!user) {
+        showNameModal();
+        return; // Don't load todos until user enters name
+    }
+
+    // User is logged in, set up the app
+    await setupAppAfterLogin();
 }
 
 // Start the app
