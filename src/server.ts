@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
+import { EventEmitter } from 'events';
 import TodoDatabase, { Theme } from './database';
 
 const app = express();
@@ -7,6 +8,12 @@ const PORT = 3000;
 
 // Initialize database
 const db = new TodoDatabase();
+
+// Event emitter for broadcasting changes
+const todoEvents = new EventEmitter();
+
+// Store connected SSE clients
+const sseClients: Response[] = [];
 
 // Middleware
 app.use(express.json());
@@ -28,6 +35,41 @@ app.get('/api/user', (req: Request, res: Response) => {
     const userName = db.getTheme(); // We'll store current user in settings
     res.json({ userName: 'Guest' }); // Default for now, handled by frontend
 });
+
+// Server-Sent Events endpoint for real-time updates
+app.get('/api/events', (req: Request, res: Response) => {
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Add this client to the list
+    sseClients.push(res);
+
+    // Send initial connection message
+    res.write('data: {"type":"connected"}\n\n');
+
+    // Remove client when connection closes
+    req.on('close', () => {
+        const index = sseClients.indexOf(res);
+        if (index !== -1) {
+            sseClients.splice(index, 1);
+        }
+    });
+});
+
+// Broadcast function to send updates to all connected clients
+function broadcastUpdate(type: string, data?: any) {
+    const message = `data: ${JSON.stringify({ type, data })}\n\n`;
+    sseClients.forEach(client => {
+        try {
+            client.write(message);
+        } catch (error) {
+            console.error('Error sending SSE message:', error);
+        }
+    });
+}
+
 
 // Get all todos
 app.get('/api/todos', (req: Request, res: Response) => {
@@ -71,6 +113,7 @@ app.post('/api/todos', (req: Request, res: Response) => {
     }
 
     const todo = db.addTodo(title, userName);
+    broadcastUpdate('todo-added', todo);
     res.json(todo);
 });
 
@@ -89,6 +132,7 @@ app.put('/api/todos/:id', (req: Request, res: Response) => {
 
     db.updateTodo(id, title);
     const todo = db.getTodoById(id);
+    broadcastUpdate('todo-updated', todo);
     res.json(todo);
 });
 
@@ -102,6 +146,7 @@ app.put('/api/todos/:id/toggle', (req: Request, res: Response) => {
 
     db.toggleTodo(id);
     const todo = db.getTodoById(id);
+    broadcastUpdate('todo-toggled', todo);
     res.json(todo);
 });
 
@@ -114,6 +159,7 @@ app.delete('/api/todos/:id', (req: Request, res: Response) => {
     }
 
     db.deleteTodo(id);
+    broadcastUpdate('todo-deleted', { id });
     res.json({ success: true });
 });
 

@@ -54,9 +54,9 @@ jobs:
 
           # Get branch name (handle both push and PR events)
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BRANCH=$(echo "${{ github.head_ref }}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')
+            BRANCH=$(echo "${{ github.head_ref }}" | tr '/' '-')
           else
-            BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')
+            BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
           fi
 
           # Get short SHA
