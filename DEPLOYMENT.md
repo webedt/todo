@@ -1,11 +1,11 @@
 # Deployment Guide for Dokploy
 
-This guide explains how to deploy the Todo app to Dokploy with subdomain-based routing.
+This guide explains how to deploy the Todo app to Dokploy with path-based routing and Strip Prefix.
 
 ## Prerequisites
 
 - Dokploy instance running
-- Wildcard DNS `*.etdofresh.com` pointing to your Dokploy server
+- Domain `github.etdofresh.com` pointing to your Dokploy server
 - GitHub organization variables and secrets configured
 - Self-hosted GitHub Actions runner
 
@@ -20,7 +20,8 @@ The deployment is **fully automated** via GitHub Actions. No manual Dokploy conf
 3. Workflow creates/updates Dokploy application automatically
 4. Application is configured with:
    - GitHub provider (builds from Dockerfile)
-   - Subdomain: `{owner}-{repo}-{branch}.etdofresh.com`
+   - Path-based routing: `github.etdofresh.com/{owner}/{repo}/{branch}/`
+   - Strip Prefix enabled (path is removed before forwarding)
    - Let's Encrypt SSL certificate
    - Port 3000
 5. Deployment is triggered (for new apps only)
@@ -59,16 +60,20 @@ Deploying multiple branches is automatic! Each push to a branch creates a new ap
 
 1. Push code to `feature/new-feature`
 2. Workflow automatically creates: `webedt-todo-feature-new-feature`
-3. **Live URL**: `https://webedt-todo-feature-new-feature.etdofresh.com`
+3. **Live URL**: `https://github.etdofresh.com/webedt/todo/feature-new-feature/`
 4. When branch is deleted, the application is automatically cleaned up
 
-### Domain Naming Strategy
+### Strip Prefix Explained
 
-The workflow uses a progressive fallback to fit within DNS's 63-character subdomain limit:
+**How Strip Prefix Works:**
 
-1. Try `{owner}-{repo}-{branch}` (preferred)
-2. Fall back to `{repo}-{branch}` if too long
-3. Further strategies if still too long (see workflow for details)
+When a request comes to `https://github.etdofresh.com/webedt/todo/main/api/todos`:
+
+1. Dokploy receives the request at path: `/webedt/todo/main/api/todos`
+2. Strip Prefix removes: `/webedt/todo/main`
+3. Your app receives: `/api/todos`
+
+This allows your app to have routes like `/api/todos` without needing to know about the deployment path.
 
 ## Cleanup on Branch Delete
 
@@ -110,4 +115,4 @@ View logs in Dokploy:
 After deploying to the `main` branch:
 
 - **GitHub Branch**: https://github.com/webedt/todo/tree/main
-- **Live Site**: https://webedt-todo-main.etdofresh.com
+- **Live Site**: https://github.etdofresh.com/webedt/todo/main/

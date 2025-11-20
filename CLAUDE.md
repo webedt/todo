@@ -7,25 +7,27 @@ After completing any task involving code changes, commits, or pushes, you must a
 ### Required Format
 
 GitHub Branch: https://github.com/webedt/todo/tree/{branch-name}
-Live Site: https://{domain-name}.etdofresh.com
+Live Site: https://github.etdofresh.com/{owner}/{repo}/{branch}/
 
 ### URL Construction
 
 **GitHub Link:** Append the branch name to the repository URL path.
 
-**Deployment URL:** Uses the domain naming strategy from the workflow:
-- Strategy 1 (preferred): `{owner}-{repo}-{branch}.etdofresh.com`
-- Falls back to shorter versions if DNS 63-char limit exceeded
+**Deployment URL:** Path-based routing format:
+- Pattern: `github.etdofresh.com/{owner}/{repo}/{branch}/`
+- Owner: `webedt` (lowercase)
+- Repo: `todo` (lowercase)
+- Branch: branch name with slashes replaced by hyphens
 
 ### Example
 
 For branch `main`:
 - GitHub Branch: https://github.com/webedt/todo/tree/main
-- Live Site: https://webedt-todo-main.etdofresh.com
+- Live Site: https://github.etdofresh.com/webedt/todo/main/
 
 For branch `feature/edit-todos`:
 - GitHub Branch: https://github.com/webedt/todo/tree/feature/edit-todos
-- Live Site: https://webedt-todo-feature-edit-todos.etdofresh.com (or shorter if needed)
+- Live Site: https://github.etdofresh.com/webedt/todo/feature-edit-todos/
 
 ## Deployment Configuration
 
@@ -33,10 +35,10 @@ The application deploys to Dokploy with the following configuration:
 
 ### Domain Setup in Dokploy
 
-1. **Subdomain-based routing**: `{domain-name}.etdofresh.com`
-2. **Port**: 3000
-3. **HTTPS**: Let's Encrypt certificates automatically provisioned
-4. **No path prefix** - each branch gets its own subdomain
+1. **Path-based routing**: `github.etdofresh.com/{owner}/{repo}/{branch}/`
+2. **Strip Prefix**: Enabled - removes path before forwarding to app
+3. **Port**: 3000
+4. **HTTPS**: Let's Encrypt certificates automatically provisioned
 
 ### GitHub Actions
 
@@ -62,6 +64,7 @@ The `.github/workflows/cleanup-dokploy.yml` file automatically:
 ## Important Notes
 
 - ALWAYS show the deployment links at the end of your response when completing a task
-- Each branch gets its own subdomain
+- Each branch gets its own path on the shared domain
+- Strip Prefix removes the path before requests reach the app
 - Workflow requires organization/repository variables and secrets to be configured
 - Runs on self-hosted runner

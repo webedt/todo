@@ -63,7 +63,7 @@ This application automatically deploys to Dokploy via GitHub Actions on every pu
 ### Deployment URLs
 
 - **GitHub Repository**: https://github.com/webedt/todo
-- **Live Site**: https://webedt-todo-main.etdofresh.com
+- **Live Site**: https://github.etdofresh.com/webedt/todo/main/
 
 ### Docker Deployment
 
@@ -77,8 +77,9 @@ docker run -p 3000:3000 todo-app
 
 ### Dokploy Configuration
 
-The app deploys with subdomain-based routing:
-- URL pattern: `{owner}-{repo}-{branch}.etdofresh.com`
-- Each branch gets its own subdomain with Let's Encrypt SSL
+The app deploys with path-based routing:
+- URL pattern: `github.etdofresh.com/{owner}/{repo}/{branch}/`
+- Strip Prefix enabled - path is removed before forwarding to app
+- Each branch gets its own path on shared domain
 - Container exposes port 3000
 - Automatic cleanup when branches are deleted

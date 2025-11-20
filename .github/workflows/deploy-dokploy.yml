@@ -353,9 +353,12 @@ jobs:
               echo "Response: ${UPDATE_BODY}"
             fi
 
-            # Add domain to the application (use DOMAIN_NAME for DNS compliance)
-            DOMAIN_NAME="${{ steps.metadata.outputs.domain_name }}"
-            DOMAIN="${DOMAIN_NAME}.etdofresh.com"
+            # Use path-based routing with Strip Path
+            OWNER="${{ steps.metadata.outputs.owner }}"
+            REPO="${{ steps.metadata.outputs.repo }}"
+            BRANCH="${{ steps.metadata.outputs.branch }}"
+            DOMAIN="github.etdofresh.com"
+            PATH_PREFIX="/${OWNER}/${REPO}/${BRANCH}"
 
             # Check if domain already exists to avoid duplicates
             echo "🔍 Checking for existing domains..."
@@ -370,21 +373,21 @@ jobs:
                 }
               }")
 
-            # Get all domains for this application and count duplicates
-            DOMAIN_IDS=$(echo "$APP_DETAILS" | jq -r --arg domain "$DOMAIN" \
-              '.result.data.json.domains[]? | select(.host == $domain) | .domainId')
+            # Get all domains for this application with matching path
+            DOMAIN_IDS=$(echo "$APP_DETAILS" | jq -r --arg domain "$DOMAIN" --arg path "$PATH_PREFIX" \
+              '.result.data.json.domains[]? | select(.host == $domain and .path == $path) | .domainId')
 
             DOMAIN_COUNT=$(echo "$DOMAIN_IDS" | grep -c . 2>/dev/null | tr -d '\n' || echo "0")
 
-            echo "Found $DOMAIN_COUNT existing domain(s) for ${DOMAIN}"
+            echo "Found $DOMAIN_COUNT existing domain(s) for ${DOMAIN}${PATH_PREFIX}"
 
-            # If there are multiple domains with the same host, remove duplicates (keep the oldest one)
+            # If there are multiple domains with the same host+path, remove duplicates
             if [ "$DOMAIN_COUNT" -gt 1 ]; then
               echo "⚠️  Found duplicate domains! Cleaning up..."
 
               # Get all domain details sorted by creation date
-              SORTED_DOMAINS=$(echo "$APP_DETAILS" | jq -r --arg domain "$DOMAIN" \
-                '.result.data.json.domains[]? | select(.host == $domain) |
+              SORTED_DOMAINS=$(echo "$APP_DETAILS" | jq -r --arg domain "$DOMAIN" --arg path "$PATH_PREFIX" \
+                '.result.data.json.domains[]? | select(.host == $domain and .path == $path) |
                 {domainId: .domainId, createdAt: .createdAt} |
                 @json' | sort -t'"' -k4)
 
@@ -424,7 +427,7 @@ jobs:
               echo "✅ Duplicate cleanup complete"
               DOMAIN_EXISTS="true"
             elif [ "$DOMAIN_COUNT" -eq 1 ]; then
-              echo "ℹ️  Domain already exists: https://${DOMAIN}"
+              echo "ℹ️  Domain already exists: https://${DOMAIN}${PATH_PREFIX}"
               DOMAIN_EXISTS="true"
             else
               DOMAIN_EXISTS="false"
@@ -432,7 +435,7 @@ jobs:
 
             # Only create domain if it doesn't exist
             if [ "$DOMAIN_EXISTS" = "false" ]; then
-              echo "🌐 Creating domain: https://${DOMAIN}"
+              echo "🌐 Creating domain with path: https://${DOMAIN}${PATH_PREFIX}"
               DOMAIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X 'POST' \
                 "${DOKPLOY_URL}/api/trpc/domain.create" \
                 -H 'accept: application/json' \
@@ -442,11 +445,12 @@ jobs:
                   \"json\": {
                     \"applicationId\": \"${APP_ID}\",
                     \"host\": \"${DOMAIN}\",
-                    \"path\": \"/\",
+                    \"path\": \"${PATH_PREFIX}\",
                     \"port\": 3000,
                     \"https\": true,
                     \"certificateType\": \"letsencrypt\",
-                    \"domainType\": \"application\"
+                    \"domainType\": \"application\",
+                    \"stripPrefix\": true
                   }
                 }")
 
@@ -454,7 +458,8 @@ jobs:
               DOMAIN_BODY=$(echo "$DOMAIN_RESPONSE" | sed '$d')
 
               if [ "$DOMAIN_HTTP_CODE" -ge 200 ] && [ "$DOMAIN_HTTP_CODE" -lt 300 ]; then
-                echo "✅ Domain created successfully: https://${DOMAIN}"
+                echo "✅ Domain created successfully: https://${DOMAIN}${PATH_PREFIX}"
+                echo "✅ Strip Prefix enabled - path will be removed before forwarding to app"
               else
                 echo "⚠️  Warning: Failed to create domain (HTTP ${DOMAIN_HTTP_CODE})"
                 echo "Response: ${DOMAIN_BODY}"
@@ -463,14 +468,14 @@ jobs:
             fi
           fi
 
-          DOMAIN_NAME="${{ steps.metadata.outputs.domain_name }}"
           echo "application_id=${APP_ID}" >> $GITHUB_OUTPUT
-          echo "domain=${DOMAIN_NAME}.etdofresh.com" >> $GITHUB_OUTPUT
+          echo "domain=${DOMAIN}${PATH_PREFIX}" >> $GITHUB_OUTPUT
           echo ""
           echo "📋 Application Details:"
           echo "  - ID: ${APP_ID}"
           echo "  - Name: ${APP_NAME}"
-          echo "  - Domain: https://${DOMAIN_NAME}.etdofresh.com"
+          echo "  - Domain: https://${DOMAIN}${PATH_PREFIX}"
+          echo "  - Strip Prefix: enabled (${PATH_PREFIX} will be removed)"
           echo "  - Port: 3000"
           echo "  - Environment: ${DOKPLOY_ENVIRONMENT_ID}"
 
@@ -522,8 +527,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Application Name** (Dokploy): ${{ steps.metadata.outputs.app_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Application ID**: ${{ steps.dokploy_app.outputs.application_id }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Domain Name**: ${{ steps.metadata.outputs.domain_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Domain URL**: https://${{ steps.dokploy_app.outputs.domain }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://${{ steps.dokploy_app.outputs.domain }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Owner**: ${{ steps.metadata.outputs.owner }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository**: ${{ steps.metadata.outputs.repo }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ steps.metadata.outputs.branch }}" >> $GITHUB_STEP_SUMMARY
@@ -536,6 +540,8 @@ jobs:
             echo "✅ Deployment completed successfully" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🌐 **Access your application at**: https://${{ steps.dokploy_app.outputs.domain }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️  **Note**: Path prefix is stripped by Dokploy before forwarding to your app" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "---" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
