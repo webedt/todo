@@ -5,6 +5,7 @@ export interface Todo {
   id: number;
   title: string;
   completed: boolean;
+  cleared: boolean;
   createdAt: string;
   completedAt: string | null;
   userName: string;
@@ -41,6 +42,7 @@ class TodoDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         completed BOOLEAN DEFAULT 0,
+        cleared BOOLEAN DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         completed_at TEXT,
         user_name TEXT NOT NULL DEFAULT 'Guest'
@@ -94,10 +96,10 @@ class TodoDatabase {
   getCompletedTodos(userName?: string): Todo[] {
     if (!this.db) return [];
     if (userName) {
-      const result = this.db.exec('SELECT * FROM todos WHERE completed = 1 AND user_name = ? ORDER BY completed_at DESC', [userName]);
+      const result = this.db.exec('SELECT * FROM todos WHERE completed = 1 AND cleared = 0 AND user_name = ? ORDER BY completed_at DESC', [userName]);
       return this.parseResults(result);
     }
-    const result = this.db.exec('SELECT * FROM todos WHERE completed = 1 ORDER BY completed_at DESC');
+    const result = this.db.exec('SELECT * FROM todos WHERE completed = 1 AND cleared = 0 ORDER BY completed_at DESC');
     return this.parseResults(result);
   }
 
@@ -156,6 +158,12 @@ class TodoDatabase {
     return this.parseResults(result);
   }
 
+  clearCompletedTodos(): void {
+    if (!this.db) return;
+    this.db.run('UPDATE todos SET cleared = 1 WHERE completed = 1 AND cleared = 0');
+    this.save();
+  }
+
   // Settings operations
   getTheme(): Theme {
     if (!this.db) return 'dark';
@@ -192,6 +200,7 @@ class TodoDatabase {
       id: row.id,
       title: row.title,
       completed: Boolean(row.completed),
+      cleared: Boolean(row.cleared),
       createdAt: row.created_at,
       completedAt: row.completed_at,
       userName: row.user_name || 'Guest'

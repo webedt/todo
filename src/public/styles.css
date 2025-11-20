@@ -135,6 +135,29 @@ ul {
     display: none;
 }
 
+.completed-header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.clear-completed-btn {
+    padding: 8px 16px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: bold;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+.clear-completed-btn:hover {
+    opacity: 0.8;
+}
+
 .todo-item {
     display: flex;
     align-items: center;
@@ -222,6 +245,11 @@ body[data-theme="dark"] .todo-item button {
     color: white;
 }
 
+body[data-theme="dark"] .clear-completed-btn {
+    background-color: #e94560;
+    color: white;
+}
+
 /* Theme: Light */
 body[data-theme="light"] {
     background-color: #f5f5f5;
@@ -250,6 +278,11 @@ body[data-theme="light"] .add-todo button {
 
 body[data-theme="light"] .todo-item button {
     background-color: #e74c3c;
+    color: white;
+}
+
+body[data-theme="light"] .clear-completed-btn {
+    background-color: #95a5a6;
     color: white;
 }
 
@@ -290,6 +323,11 @@ body[data-theme="retro"] .todo-item button {
     color: #0f0f0f;
 }
 
+body[data-theme="retro"] .clear-completed-btn {
+    background-color: #ffff00;
+    color: #0f0f0f;
+}
+
 /* Theme: Banana */
 body[data-theme="banana"] {
     background-color: #fff9e6;
@@ -319,6 +357,11 @@ body[data-theme="banana"] .add-todo button {
 body[data-theme="banana"] .todo-item button {
     background-color: #ff9500;
     color: white;
+}
+
+body[data-theme="banana"] .clear-completed-btn {
+    background-color: #ffb733;
+    color: #5c4d00;
 }
 
 /* Theme: Ice */
@@ -352,6 +395,11 @@ body[data-theme="ice"] .todo-item button {
     color: white;
 }
 
+body[data-theme="ice"] .clear-completed-btn {
+    background-color: #4fc3f7;
+    color: #01579b;
+}
+
 /* Theme: Forest */
 body[data-theme="forest"] {
     background-color: #1b2a1b;
@@ -380,6 +428,11 @@ body[data-theme="forest"] .add-todo button {
 
 body[data-theme="forest"] .todo-item button {
     background-color: #81c784;
+    color: #1b2a1b;
+}
+
+body[data-theme="forest"] .clear-completed-btn {
+    background-color: #a5d6a7;
     color: #1b2a1b;
 }
 

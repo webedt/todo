@@ -108,6 +108,13 @@ const API = {
             body: JSON.stringify({ theme })
         });
         return res.json();
+    },
+
+    async clearCompletedTodos() {
+        const res = await fetch('./api/todos/clear-completed', {
+            method: 'POST'
+        });
+        return res.json();
     }
 };
 
@@ -478,6 +485,19 @@ async function init() {
     document.getElementById('switch-user').addEventListener('click', () => {
         clearCurrentUser();
         showNameModal();
+    });
+
+    // Clear completed todos
+    const clearCompletedBtn = document.getElementById('clear-completed-btn');
+    clearCompletedBtn.addEventListener('click', async () => {
+        const completedTodos = await API.getCompletedTodos();
+        if (completedTodos.length === 0) {
+            return;
+        }
+        if (confirm(`Clear ${completedTodos.length} completed todo(s)? They will remain in the database but won't be visible.`)) {
+            await API.clearCompletedTodos();
+            await loadTodos();
+        }
     });
 }
 
