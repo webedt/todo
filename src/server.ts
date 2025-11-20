@@ -215,6 +215,17 @@ app.get('/', (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Catch-all route for user paths (SPA routing)
+// This serves index.html for any path that looks like a user ID
+app.get('*', (req: Request, res: Response) => {
+    // Only serve index.html for non-API routes
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        res.status(404).json({ error: 'Not found' });
+    }
+});
+
   // Start server
   app.listen(PORT, () => {
     console.log(`🚀 Todo app running at http://localhost:${PORT}`);

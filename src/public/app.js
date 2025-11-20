@@ -3,15 +3,34 @@ let currentUserId = null;
 let currentUserDisplayName = null;
 
 function getUserIdFromUrl() {
-    const hash = window.location.hash;
-    if (hash && hash.startsWith('#/')) {
-        return hash.substring(2); // Remove '#/'
+    const pathname = window.location.pathname;
+    // Remove leading/trailing slashes and get the last segment
+    const segments = pathname.split('/').filter(s => s.length > 0);
+
+    // The user ID should be the last segment (after any deployment path)
+    if (segments.length > 0) {
+        const lastSegment = segments[segments.length - 1];
+        // Check if it looks like a user ID (contains a hyphen and is reasonably long)
+        if (lastSegment.includes('-') && lastSegment.length > 10) {
+            return lastSegment;
+        }
     }
     return null;
 }
 
 function setUrlWithUserId(userId) {
-    window.location.hash = `#/${userId}`;
+    // Get the base path (everything before the user ID)
+    const pathname = window.location.pathname;
+    let basePath = pathname.endsWith('/') ? pathname : pathname + '/';
+
+    // If there's already a user ID, remove it
+    const currentUserId = getUserIdFromUrl();
+    if (currentUserId && basePath.includes(currentUserId)) {
+        basePath = basePath.replace(currentUserId + '/', '').replace(currentUserId, '');
+    }
+
+    const newPath = basePath + userId;
+    window.history.pushState({userId}, '', newPath);
 }
 
 async function loadUserFromUrl() {
@@ -62,7 +81,14 @@ function clearCurrentUser() {
     currentUserId = null;
     currentUserDisplayName = null;
     localStorage.removeItem('todoAppUserId');
-    window.location.hash = '';
+
+    // Navigate back to root path, removing the user ID
+    const pathname = window.location.pathname;
+    const userId = getUserIdFromUrl();
+    if (userId && pathname.includes(userId)) {
+        const basePath = pathname.replace('/' + userId, '').replace(userId, '') || '/';
+        window.history.pushState({}, '', basePath);
+    }
 }
 
 function updateTitle() {
@@ -580,8 +606,8 @@ async function init() {
         showNameModal();
     });
 
-    // Handle URL hash changes (when user navigates back/forward)
-    window.addEventListener('hashchange', async () => {
+    // Handle URL path changes (when user navigates back/forward)
+    window.addEventListener('popstate', async () => {
         const userId = getUserIdFromUrl();
         if (userId && userId !== currentUserId) {
             const user = await loadUserFromUrl();
@@ -590,6 +616,10 @@ async function init() {
             } else {
                 showNameModal();
             }
+        } else if (!userId && currentUserId) {
+            // User navigated back to home, clear current user
+            clearCurrentUser();
+            showNameModal();
         }
     });
 

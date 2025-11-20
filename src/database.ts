@@ -187,10 +187,10 @@ class TodoDatabase {
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
 
-    // Generate 8 random characters (alphanumeric)
+    // Generate 32 random characters (alphanumeric)
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let randomSuffix = '';
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 32; i++) {
       randomSuffix += chars.charAt(Math.floor(Math.random() * chars.length));
     }
 
