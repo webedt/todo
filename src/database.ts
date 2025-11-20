@@ -7,6 +7,7 @@ export interface Todo {
   completed: boolean;
   createdAt: string;
   completedAt: string | null;
+  userName: string;
 }
 
 export interface Settings {
@@ -41,7 +42,8 @@ class TodoDatabase {
         title TEXT NOT NULL,
         completed BOOLEAN DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        completed_at TEXT
+        completed_at TEXT,
+        user_name TEXT NOT NULL DEFAULT 'Guest'
       )
     `);
 
@@ -69,29 +71,41 @@ class TodoDatabase {
   }
 
   // Todo operations
-  getAllTodos(): Todo[] {
+  getAllTodos(userName?: string): Todo[] {
     if (!this.db) return [];
+    if (userName) {
+      const result = this.db.exec('SELECT * FROM todos WHERE user_name = ? ORDER BY created_at DESC', [userName]);
+      return this.parseResults(result);
+    }
     const result = this.db.exec('SELECT * FROM todos ORDER BY created_at DESC');
     return this.parseResults(result);
   }
 
-  getUncompletedTodos(): Todo[] {
+  getUncompletedTodos(userName?: string): Todo[] {
     if (!this.db) return [];
+    if (userName) {
+      const result = this.db.exec('SELECT * FROM todos WHERE completed = 0 AND user_name = ? ORDER BY created_at DESC', [userName]);
+      return this.parseResults(result);
+    }
     const result = this.db.exec('SELECT * FROM todos WHERE completed = 0 ORDER BY created_at DESC');
     return this.parseResults(result);
   }
 
-  getCompletedTodos(): Todo[] {
+  getCompletedTodos(userName?: string): Todo[] {
     if (!this.db) return [];
+    if (userName) {
+      const result = this.db.exec('SELECT * FROM todos WHERE completed = 1 AND user_name = ? ORDER BY completed_at DESC', [userName]);
+      return this.parseResults(result);
+    }
     const result = this.db.exec('SELECT * FROM todos WHERE completed = 1 ORDER BY completed_at DESC');
     return this.parseResults(result);
   }
 
-  addTodo(title: string): Todo {
+  addTodo(title: string, userName: string): Todo {
     if (!this.db) throw new Error('Database not initialized');
 
     const now = new Date().toISOString();
-    this.db.run('INSERT INTO todos (title, created_at) VALUES (?, ?)', [title, now]);
+    this.db.run('INSERT INTO todos (title, created_at, user_name) VALUES (?, ?, ?)', [title, now, userName]);
     this.save();
 
     const result = this.db.exec('SELECT * FROM todos ORDER BY id DESC LIMIT 1');
@@ -132,8 +146,12 @@ class TodoDatabase {
     this.save();
   }
 
-  searchTodos(query: string): Todo[] {
+  searchTodos(query: string, userName?: string): Todo[] {
     if (!this.db) return [];
+    if (userName) {
+      const result = this.db.exec('SELECT * FROM todos WHERE title LIKE ? AND user_name = ? ORDER BY created_at DESC', [`%${query}%`, userName]);
+      return this.parseResults(result);
+    }
     const result = this.db.exec('SELECT * FROM todos WHERE title LIKE ? ORDER BY created_at DESC', [`%${query}%`]);
     return this.parseResults(result);
   }
@@ -175,7 +193,8 @@ class TodoDatabase {
       title: row.title,
       completed: Boolean(row.completed),
       createdAt: row.created_at,
-      completedAt: row.completed_at
+      completedAt: row.completed_at,
+      userName: row.user_name || 'Guest'
     };
   }
 

@@ -1,25 +1,69 @@
+// User session management
+let currentUser = null;
+
+function getCurrentUser() {
+    if (!currentUser) {
+        const stored = localStorage.getItem('todoAppUser');
+        if (stored) {
+            const userData = JSON.parse(stored);
+            if (userData.rememberMe) {
+                currentUser = userData.userName;
+            }
+        }
+    }
+    return currentUser;
+}
+
+function setCurrentUser(userName, rememberMe = false) {
+    currentUser = userName;
+    if (rememberMe) {
+        localStorage.setItem('todoAppUser', JSON.stringify({ userName, rememberMe }));
+    } else {
+        localStorage.removeItem('todoAppUser');
+    }
+    updateTitle();
+}
+
+function clearCurrentUser() {
+    currentUser = null;
+    localStorage.removeItem('todoAppUser');
+}
+
+function updateTitle() {
+    const title = document.getElementById('app-title');
+    if (currentUser) {
+        title.textContent = `📝 ${currentUser} Todos`;
+    } else {
+        title.textContent = '📝 Todo App';
+    }
+}
+
 // API helper functions
 const API = {
     async getTodos() {
-        const res = await fetch('./api/todos');
+        const userName = getCurrentUser();
+        const res = await fetch(`./api/todos?userName=${encodeURIComponent(userName)}`);
         return res.json();
     },
 
     async getUncompletedTodos() {
-        const res = await fetch('./api/todos/uncompleted');
+        const userName = getCurrentUser();
+        const res = await fetch(`./api/todos/uncompleted?userName=${encodeURIComponent(userName)}`);
         return res.json();
     },
 
     async getCompletedTodos() {
-        const res = await fetch('./api/todos/completed');
+        const userName = getCurrentUser();
+        const res = await fetch(`./api/todos/completed?userName=${encodeURIComponent(userName)}`);
         return res.json();
     },
 
     async addTodo(title) {
+        const userName = getCurrentUser();
         const res = await fetch('./api/todos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title })
+            body: JSON.stringify({ title, userName })
         });
         return res.json();
     },
@@ -47,7 +91,8 @@ const API = {
     },
 
     async searchTodos(query) {
-        const res = await fetch(`./api/todos/search?q=${encodeURIComponent(query)}`);
+        const userName = getCurrentUser();
+        const res = await fetch(`./api/todos/search?q=${encodeURIComponent(query)}&userName=${encodeURIComponent(userName)}`);
         return res.json();
     },
 
@@ -275,12 +320,52 @@ async function loadTodos() {
     }
 }
 
+// Show name modal
+function showNameModal() {
+    const modal = document.getElementById('name-modal');
+    modal.classList.add('show');
+    const nameInput = document.getElementById('name-input');
+    nameInput.value = '';
+    document.getElementById('remember-me').checked = false;
+    nameInput.focus();
+}
+
+// Hide name modal
+function hideNameModal() {
+    const modal = document.getElementById('name-modal');
+    modal.classList.remove('show');
+}
+
+// Handle name submission
+function handleNameSubmit() {
+    const nameInput = document.getElementById('name-input');
+    const rememberMe = document.getElementById('remember-me').checked;
+    const userName = nameInput.value.trim();
+
+    if (userName) {
+        setCurrentUser(userName, rememberMe);
+        hideNameModal();
+        loadTodos();
+    } else {
+        nameInput.focus();
+    }
+}
+
 // Initialize app
 async function init() {
     // Load theme
     const { theme } = await API.getTheme();
     document.body.dataset.theme = theme;
     document.getElementById('theme-select').value = theme;
+
+    // Check if user is already logged in
+    const user = getCurrentUser();
+    if (!user) {
+        showNameModal();
+        return; // Don't load todos until user enters name
+    }
+
+    updateTitle();
 
     // Load todos
     await loadTodos();
@@ -329,6 +414,20 @@ async function init() {
     completedHeader.addEventListener('click', () => {
         completedList.classList.toggle('collapsed');
         completedHeader.classList.toggle('collapsed');
+    });
+
+    // Name modal submit
+    document.getElementById('name-submit').addEventListener('click', handleNameSubmit);
+    document.getElementById('name-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            handleNameSubmit();
+        }
+    });
+
+    // Switch user button
+    document.getElementById('switch-user').addEventListener('click', () => {
+        clearCurrentUser();
+        showNameModal();
     });
 }
 
