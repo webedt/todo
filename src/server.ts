@@ -17,8 +17,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Initialize and start server
 async function startServer() {
   await db.initialize();
@@ -124,6 +122,9 @@ app.put('/api/theme', (req: Request, res: Response) => {
     db.setTheme(theme);
     res.json({ theme });
 });
+
+// Serve static files (after API routes to prevent conflicts)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve the main page
 app.get('/', (req: Request, res: Response) => {
