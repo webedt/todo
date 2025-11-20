@@ -1,22 +1,22 @@
 // API helper functions
 const API = {
     async getTodos() {
-        const res = await fetch('/api/todos');
+        const res = await fetch('./api/todos');
         return res.json();
     },
 
     async getUncompletedTodos() {
-        const res = await fetch('/api/todos/uncompleted');
+        const res = await fetch('./api/todos/uncompleted');
         return res.json();
     },
 
     async getCompletedTodos() {
-        const res = await fetch('/api/todos/completed');
+        const res = await fetch('./api/todos/completed');
         return res.json();
     },
 
     async addTodo(title) {
-        const res = await fetch('/api/todos', {
+        const res = await fetch('./api/todos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title })
@@ -25,14 +25,14 @@ const API = {
     },
 
     async toggleTodo(id) {
-        const res = await fetch(`/api/todos/${id}/toggle`, {
+        const res = await fetch(`./api/todos/${id}/toggle`, {
             method: 'PUT'
         });
         return res.json();
     },
 
     async updateTodo(id, title) {
-        const res = await fetch(`/api/todos/${id}`, {
+        const res = await fetch(`./api/todos/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title })
@@ -41,23 +41,23 @@ const API = {
     },
 
     async deleteTodo(id) {
-        await fetch(`/api/todos/${id}`, {
+        await fetch(`./api/todos/${id}`, {
             method: 'DELETE'
         });
     },
 
     async searchTodos(query) {
-        const res = await fetch(`/api/todos/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`./api/todos/search?q=${encodeURIComponent(query)}`);
         return res.json();
     },
 
     async getTheme() {
-        const res = await fetch('/api/theme');
+        const res = await fetch('./api/theme');
         return res.json();
     },
 
     async setTheme(theme) {
-        const res = await fetch('/api/theme', {
+        const res = await fetch('./api/theme', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ theme })
