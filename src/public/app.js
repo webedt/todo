@@ -393,6 +393,9 @@ async function setupAppAfterLogin() {
         const theme = e.target.value;
         await API.setTheme(theme);
         document.body.dataset.theme = theme;
+        updateThemeEmoji(theme);
+        // Collapse the theme selector
+        document.querySelector('.theme-selector').classList.remove('expanded');
     });
 
     // Search event
@@ -475,12 +478,48 @@ function setupSSE() {
     });
 }
 
+// Get theme emoji
+function getThemeEmoji(theme) {
+    const themeEmojis = {
+        'dark': '🌙',
+        'light': '☀️',
+        'retro': '👾',
+        'banana': '🍌',
+        'ice': '❄️',
+        'forest': '🌲'
+    };
+    return themeEmojis[theme] || '🌙';
+}
+
+// Update theme emoji display
+function updateThemeEmoji(theme) {
+    document.getElementById('theme-emoji').textContent = getThemeEmoji(theme);
+}
+
 // Initialize app
 async function init() {
     // Load theme
     const { theme } = await API.getTheme();
     document.body.dataset.theme = theme;
     document.getElementById('theme-select').value = theme;
+    updateThemeEmoji(theme);
+
+    // Set up theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeSelector = document.querySelector('.theme-selector');
+    const themeSelect = document.getElementById('theme-select');
+
+    themeToggle.addEventListener('click', () => {
+        themeSelector.classList.add('expanded');
+        themeSelect.focus();
+    });
+
+    // Collapse when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!themeSelector.contains(e.target)) {
+            themeSelector.classList.remove('expanded');
+        }
+    });
 
     // Set up name modal event listeners (must be set up before checking user)
     document.getElementById('name-submit').addEventListener('click', handleNameSubmit);

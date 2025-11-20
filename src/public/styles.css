@@ -39,14 +39,47 @@ h1 {
     display: flex;
     gap: 10px;
     align-items: center;
+    position: relative;
 }
 
-.theme-selector select {
+.theme-toggle {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 2px solid;
+    font-size: 1.5em;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 45px;
+}
+
+.theme-toggle:hover {
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
+.theme-toggle:active {
+    transform: translateY(0);
+}
+
+.theme-select-dropdown {
     padding: 8px 12px;
     border-radius: 5px;
     border: 2px solid;
     font-size: 1em;
     cursor: pointer;
+    display: none;
+}
+
+.theme-selector.expanded .theme-select-dropdown {
+    display: block;
+}
+
+.theme-selector.expanded .theme-toggle {
+    display: none;
 }
 
 .controls {
@@ -223,7 +256,8 @@ body[data-theme="dark"] {
 body[data-theme="dark"] .add-todo input,
 body[data-theme="dark"] .filters input,
 body[data-theme="dark"] .filters select,
-body[data-theme="dark"] .theme-selector select,
+body[data-theme="dark"] .theme-select-dropdown,
+body[data-theme="dark"] .theme-toggle,
 body[data-theme="dark"] .todo-edit-input {
     background-color: #16213e;
     color: #eee;
@@ -259,7 +293,8 @@ body[data-theme="light"] {
 body[data-theme="light"] .add-todo input,
 body[data-theme="light"] .filters input,
 body[data-theme="light"] .filters select,
-body[data-theme="light"] .theme-selector select,
+body[data-theme="light"] .theme-select-dropdown,
+body[data-theme="light"] .theme-toggle,
 body[data-theme="light"] .todo-edit-input {
     background-color: white;
     color: #333;
@@ -301,7 +336,8 @@ body[data-theme="retro"] * {
 body[data-theme="retro"] .add-todo input,
 body[data-theme="retro"] .filters input,
 body[data-theme="retro"] .filters select,
-body[data-theme="retro"] .theme-selector select,
+body[data-theme="retro"] .theme-select-dropdown,
+body[data-theme="retro"] .theme-toggle,
 body[data-theme="retro"] .todo-edit-input {
     background-color: #1a1a1a;
     color: #00ff00;
@@ -337,7 +373,8 @@ body[data-theme="banana"] {
 body[data-theme="banana"] .add-todo input,
 body[data-theme="banana"] .filters input,
 body[data-theme="banana"] .filters select,
-body[data-theme="banana"] .theme-selector select,
+body[data-theme="banana"] .theme-select-dropdown,
+body[data-theme="banana"] .theme-toggle,
 body[data-theme="banana"] .todo-edit-input {
     background-color: #fffaed;
     color: #5c4d00;
@@ -373,7 +410,8 @@ body[data-theme="ice"] {
 body[data-theme="ice"] .add-todo input,
 body[data-theme="ice"] .filters input,
 body[data-theme="ice"] .filters select,
-body[data-theme="ice"] .theme-selector select,
+body[data-theme="ice"] .theme-select-dropdown,
+body[data-theme="ice"] .theme-toggle,
 body[data-theme="ice"] .todo-edit-input {
     background-color: #f1f8ff;
     color: #01579b;
@@ -409,7 +447,8 @@ body[data-theme="forest"] {
 body[data-theme="forest"] .add-todo input,
 body[data-theme="forest"] .filters input,
 body[data-theme="forest"] .filters select,
-body[data-theme="forest"] .theme-selector select,
+body[data-theme="forest"] .theme-select-dropdown,
+body[data-theme="forest"] .theme-toggle,
 body[data-theme="forest"] .todo-edit-input {
     background-color: #2d4a2d;
     color: #c8e6c9;
