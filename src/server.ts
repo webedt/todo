@@ -17,14 +17,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Redirect root path to include trailing slash for proper relative path resolution
-app.use((req, res, next) => {
-  if (req.path === '/' && !req.url.endsWith('/')) {
-    return res.redirect(301, req.url + '/');
-  }
-  next();
-});
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize and start server
