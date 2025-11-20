@@ -10,15 +10,6 @@ const db = new TodoDatabase();
 
 // Middleware
 app.use(express.json());
-
-// Redirect URLs without trailing slash to include one (for proper relative path resolution)
-app.use((req, res, next) => {
-  if (req.path !== '/' && !req.path.match(/[.]/) && !req.path.endsWith('/')) {
-    return res.redirect(301, req.path + '/');
-  }
-  next();
-});
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize and start server
