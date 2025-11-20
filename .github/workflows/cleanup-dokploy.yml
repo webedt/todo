@@ -19,8 +19,8 @@ jobs:
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')
           REPO=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
 
-          # Get deleted branch name
-          BRANCH=$(echo "${{ github.event.ref }}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')
+          # Get deleted branch name (preserve case to match deploy workflow)
+          BRANCH=$(echo "${{ github.event.ref }}" | tr '/' '-')
 
           # Generate the same app name that was used during creation
           APP_NAME="${OWNER}-${REPO}-${BRANCH}"
