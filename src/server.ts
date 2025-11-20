@@ -30,6 +30,12 @@ async function startServer() {
 
 // API Routes
 
+// Get current user
+app.get('/api/user', (req: Request, res: Response) => {
+    const userName = db.getTheme(); // We'll store current user in settings
+    res.json({ userName: 'Guest' }); // Default for now, handled by frontend
+});
+
 // Server-Sent Events endpoint for real-time updates
 app.get('/api/events', (req: Request, res: Response) => {
     // Set headers for SSE
@@ -64,40 +70,49 @@ function broadcastUpdate(type: string, data?: any) {
     });
 }
 
+
 // Get all todos
 app.get('/api/todos', (req: Request, res: Response) => {
-    const todos = db.getAllTodos();
+    const userName = req.query.userName as string;
+    const todos = db.getAllTodos(userName);
     res.json(todos);
 });
 
 // Get uncompleted todos
 app.get('/api/todos/uncompleted', (req: Request, res: Response) => {
-    const todos = db.getUncompletedTodos();
+    const userName = req.query.userName as string;
+    const todos = db.getUncompletedTodos(userName);
     res.json(todos);
 });
 
 // Get completed todos
 app.get('/api/todos/completed', (req: Request, res: Response) => {
-    const todos = db.getCompletedTodos();
+    const userName = req.query.userName as string;
+    const todos = db.getCompletedTodos(userName);
     res.json(todos);
 });
 
 // Search todos
 app.get('/api/todos/search', (req: Request, res: Response) => {
     const query = req.query.q as string || '';
-    const todos = db.searchTodos(query);
+    const userName = req.query.userName as string;
+    const todos = db.searchTodos(query, userName);
     res.json(todos);
 });
 
 // Add a new todo
 app.post('/api/todos', (req: Request, res: Response) => {
-    const { title } = req.body;
+    const { title, userName } = req.body;
 
     if (!title || typeof title !== 'string') {
         return res.status(400).json({ error: 'Title is required' });
     }
 
-    const todo = db.addTodo(title);
+    if (!userName || typeof userName !== 'string') {
+        return res.status(400).json({ error: 'User name is required' });
+    }
+
+    const todo = db.addTodo(title, userName);
     broadcastUpdate('todo-added', todo);
     res.json(todo);
 });
