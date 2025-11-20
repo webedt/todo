@@ -282,6 +282,53 @@ async function loadTodos() {
     }
 }
 
+// Setup Server-Sent Events for real-time updates
+function setupSSE() {
+    let eventSource;
+
+    function connect() {
+        eventSource = new EventSource('./api/events');
+
+        eventSource.onopen = () => {
+            console.log('✓ Real-time sync connected');
+        };
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            // Handle different event types
+            switch(data.type) {
+                case 'connected':
+                    console.log('✓ SSE connection established');
+                    break;
+                case 'todo-added':
+                case 'todo-updated':
+                case 'todo-toggled':
+                case 'todo-deleted':
+                    // Reload todos when any change occurs
+                    loadTodos();
+                    break;
+            }
+        };
+
+        eventSource.onerror = (error) => {
+            console.log('✗ SSE connection lost, reconnecting...');
+            eventSource.close();
+            // Reconnect after 3 seconds
+            setTimeout(connect, 3000);
+        };
+    }
+
+    connect();
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (eventSource) {
+            eventSource.close();
+        }
+    });
+}
+
 // Initialize app
 async function init() {
     // Load theme
@@ -291,6 +338,9 @@ async function init() {
 
     // Load todos
     await loadTodos();
+
+    // Setup real-time sync
+    setupSSE();
 
     // Add todo event
     const addBtn = document.getElementById('add-btn');
