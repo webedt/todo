@@ -10,6 +10,13 @@ const db = new TodoDatabase();
 
 // Middleware
 app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize and start server
