@@ -1,9 +1,7 @@
 name: Cleanup Dokploy App on Branch Delete
 
 on:
-  delete:
-    branches:
-      - '**'  # Trigger on any branch deletion
+  delete:  # Trigger on any branch or tag deletion (filtered by ref_type below)
 
 env:
   NODE_VERSION: '20'
