@@ -148,6 +148,12 @@ app.delete('/api/todos/:id', (req: Request, res: Response) => {
     res.json({ success: true });
 });
 
+// Clear all completed todos
+app.post('/api/todos/clear-completed', (req: Request, res: Response) => {
+    db.clearCompletedTodos();
+    res.json({ success: true });
+});
+
 // Get theme
 app.get('/api/theme', (req: Request, res: Response) => {
     const theme = db.getTheme();
