@@ -1,0 +1,395 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    transition: background-color 0.3s, color 0.3s;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+h1 {
+    font-size: 2.5em;
+}
+
+.theme-selector {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.theme-selector select {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 2px solid;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.controls {
+    margin-bottom: 30px;
+}
+
+.add-todo {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.add-todo input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 5px;
+    border: 2px solid;
+    font-size: 1em;
+}
+
+.add-todo button, .todo-item button {
+    padding: 12px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+
+.add-todo button:hover, .todo-item button:hover {
+    opacity: 0.8;
+}
+
+.filters {
+    display: flex;
+    gap: 10px;
+}
+
+.filters input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 5px;
+    border: 2px solid;
+    font-size: 0.95em;
+}
+
+.filters select {
+    padding: 10px;
+    border-radius: 5px;
+    border: 2px solid;
+    font-size: 0.95em;
+    cursor: pointer;
+}
+
+.todo-list, .completed-section {
+    margin-bottom: 30px;
+}
+
+h2 {
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.collapsible {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggle-icon {
+    transition: transform 0.3s;
+}
+
+.collapsible.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+ul {
+    list-style: none;
+}
+
+#completed-list.collapsed {
+    display: none;
+}
+
+.todo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border: 2px solid;
+    transition: opacity 0.3s, transform 0.2s;
+}
+
+.todo-item:hover {
+    transform: translateX(5px);
+}
+
+.todo-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.todo-item .todo-text {
+    flex: 1;
+    font-size: 1.1em;
+    word-break: break-word;
+}
+
+.todo-item.completed .todo-text {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.todo-item button {
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+
+.button-container {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.todo-edit-input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 5px;
+    border: 2px solid;
+    font-size: 1.1em;
+    font-family: inherit;
+}
+
+.edit-btn, .save-btn, .cancel-btn {
+    min-width: 60px;
+}
+
+/* Theme: Dark (default) */
+body[data-theme="dark"] {
+    background-color: #1a1a2e;
+    color: #eee;
+}
+
+body[data-theme="dark"] .add-todo input,
+body[data-theme="dark"] .filters input,
+body[data-theme="dark"] .filters select,
+body[data-theme="dark"] .theme-selector select,
+body[data-theme="dark"] .todo-edit-input {
+    background-color: #16213e;
+    color: #eee;
+    border-color: #0f3460;
+}
+
+body[data-theme="dark"] .todo-item {
+    background-color: #16213e;
+    border-color: #0f3460;
+}
+
+body[data-theme="dark"] .add-todo button {
+    background-color: #e94560;
+    color: white;
+}
+
+body[data-theme="dark"] .todo-item button {
+    background-color: #533483;
+    color: white;
+}
+
+/* Theme: Light */
+body[data-theme="light"] {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+body[data-theme="light"] .add-todo input,
+body[data-theme="light"] .filters input,
+body[data-theme="light"] .filters select,
+body[data-theme="light"] .theme-selector select,
+body[data-theme="light"] .todo-edit-input {
+    background-color: white;
+    color: #333;
+    border-color: #ddd;
+}
+
+body[data-theme="light"] .todo-item {
+    background-color: white;
+    border-color: #ddd;
+}
+
+body[data-theme="light"] .add-todo button {
+    background-color: #4a90e2;
+    color: white;
+}
+
+body[data-theme="light"] .todo-item button {
+    background-color: #e74c3c;
+    color: white;
+}
+
+/* Theme: Retro */
+body[data-theme="retro"] {
+    background-color: #0f0f0f;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    image-rendering: pixelated;
+}
+
+body[data-theme="retro"] * {
+    font-family: 'Courier New', monospace;
+}
+
+body[data-theme="retro"] .add-todo input,
+body[data-theme="retro"] .filters input,
+body[data-theme="retro"] .filters select,
+body[data-theme="retro"] .theme-selector select,
+body[data-theme="retro"] .todo-edit-input {
+    background-color: #1a1a1a;
+    color: #00ff00;
+    border-color: #00ff00;
+}
+
+body[data-theme="retro"] .todo-item {
+    background-color: #1a1a1a;
+    border-color: #00ff00;
+}
+
+body[data-theme="retro"] .add-todo button {
+    background-color: #ff00ff;
+    color: #0f0f0f;
+}
+
+body[data-theme="retro"] .todo-item button {
+    background-color: #ff0000;
+    color: #0f0f0f;
+}
+
+/* Theme: Banana */
+body[data-theme="banana"] {
+    background-color: #fff9e6;
+    color: #5c4d00;
+}
+
+body[data-theme="banana"] .add-todo input,
+body[data-theme="banana"] .filters input,
+body[data-theme="banana"] .filters select,
+body[data-theme="banana"] .theme-selector select,
+body[data-theme="banana"] .todo-edit-input {
+    background-color: #fffaed;
+    color: #5c4d00;
+    border-color: #ffe066;
+}
+
+body[data-theme="banana"] .todo-item {
+    background-color: #fffaed;
+    border-color: #ffe066;
+}
+
+body[data-theme="banana"] .add-todo button {
+    background-color: #ffd700;
+    color: #5c4d00;
+}
+
+body[data-theme="banana"] .todo-item button {
+    background-color: #ff9500;
+    color: white;
+}
+
+/* Theme: Ice */
+body[data-theme="ice"] {
+    background-color: #e3f2fd;
+    color: #01579b;
+}
+
+body[data-theme="ice"] .add-todo input,
+body[data-theme="ice"] .filters input,
+body[data-theme="ice"] .filters select,
+body[data-theme="ice"] .theme-selector select,
+body[data-theme="ice"] .todo-edit-input {
+    background-color: #f1f8ff;
+    color: #01579b;
+    border-color: #81d4fa;
+}
+
+body[data-theme="ice"] .todo-item {
+    background-color: #f1f8ff;
+    border-color: #81d4fa;
+}
+
+body[data-theme="ice"] .add-todo button {
+    background-color: #0288d1;
+    color: white;
+}
+
+body[data-theme="ice"] .todo-item button {
+    background-color: #0277bd;
+    color: white;
+}
+
+/* Theme: Forest */
+body[data-theme="forest"] {
+    background-color: #1b2a1b;
+    color: #c8e6c9;
+}
+
+body[data-theme="forest"] .add-todo input,
+body[data-theme="forest"] .filters input,
+body[data-theme="forest"] .filters select,
+body[data-theme="forest"] .theme-selector select,
+body[data-theme="forest"] .todo-edit-input {
+    background-color: #2d4a2d;
+    color: #c8e6c9;
+    border-color: #4caf50;
+}
+
+body[data-theme="forest"] .todo-item {
+    background-color: #2d4a2d;
+    border-color: #4caf50;
+}
+
+body[data-theme="forest"] .add-todo button {
+    background-color: #66bb6a;
+    color: #1b2a1b;
+}
+
+body[data-theme="forest"] .todo-item button {
+    background-color: #81c784;
+    color: #1b2a1b;
+}
+
+/* Age-based fading */
+.todo-item[data-age="0"] { font-weight: bold; opacity: 1; }
+.todo-item[data-age="1"] { font-weight: 600; opacity: 0.95; }
+.todo-item[data-age="2"] { font-weight: 600; opacity: 0.9; }
+.todo-item[data-age="3"] { font-weight: 500; opacity: 0.85; }
+.todo-item[data-age="4"] { font-weight: 500; opacity: 0.8; }
+.todo-item[data-age="5"] { font-weight: 400; opacity: 0.75; }
+.todo-item[data-age="6"] { font-weight: 400; opacity: 0.7; }
+.todo-item[data-age="7"] { font-weight: 300; opacity: 0.65; }
+.todo-item[data-age="8"] { font-weight: 300; opacity: 0.6; }
+.todo-item[data-age="9"] { font-weight: 300; opacity: 0.55; }
+.todo-item[data-age="10-plus"] { font-weight: 200; opacity: 0.5; }
+
+#completed-count {
+    font-size: 0.8em;
+    opacity: 0.7;
+}

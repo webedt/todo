@@ -1,0 +1,25 @@
+{
+  "name": "todo-app",
+  "version": "1.0.0",
+  "description": "A themed todo app with SQLite storage and fading todos",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc && cp -r src/public dist/",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts"
+  },
+  "keywords": ["todo", "sqlite", "typescript"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sql.js": "^1.10.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.6",
+    "@types/sql.js": "^1.4.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
