@@ -511,7 +511,17 @@ async function init() {
 
     themeToggle.addEventListener('click', () => {
         themeSelector.classList.add('expanded');
-        themeSelect.focus();
+        // Small delay to ensure the dropdown is visible before opening it
+        setTimeout(() => {
+            themeSelect.focus();
+            // Trigger the dropdown to open
+            if (themeSelect.showPicker) {
+                themeSelect.showPicker();
+            } else {
+                // Fallback for browsers that don't support showPicker
+                themeSelect.click();
+            }
+        }, 10);
     });
 
     // Collapse when clicking outside
