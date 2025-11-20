@@ -1,46 +1,47 @@
 # Deployment Guide for Dokploy
 
-This guide explains how to deploy the Todo app to Dokploy with path-based routing.
+This guide explains how to deploy the Todo app to Dokploy with subdomain-based routing.
 
 ## Prerequisites
 
 - Dokploy instance running
-- Domain `github.etdofresh.com` pointing to your Dokploy server
-- GitHub Container Registry access configured
+- Wildcard DNS `*.etdofresh.com` pointing to your Dokploy server
+- GitHub organization variables and secrets configured
+- Self-hosted GitHub Actions runner
 
-## Dokploy Configuration
+## Automated Deployment
 
-### 1. Create Application
+The deployment is **fully automated** via GitHub Actions. No manual Dokploy configuration is needed!
 
-1. Log in to your Dokploy dashboard
-2. Create a new application
-3. Set the following:
-   - **Name**: `todo-main` (or `todo-{branch-name}`)
-   - **Source**: Docker Image
-   - **Image**: `ghcr.io/etdofresh/todo:main`
+### How It Works
 
-### 2. Configure Domain
+1. Push code to any branch
+2. GitHub Actions workflow (`deploy-dokploy.yml`) runs
+3. Workflow creates/updates Dokploy application automatically
+4. Application is configured with:
+   - GitHub provider (builds from Dockerfile)
+   - Subdomain: `{owner}-{repo}-{branch}.etdofresh.com`
+   - Let's Encrypt SSL certificate
+   - Port 3000
+5. Deployment is triggered (for new apps only)
 
-1. Go to the application's Domain settings
-2. Add domain: `github.etdofresh.com`
-3. **Path**: `/etdofresh/todo/main`
-4. **Enable Strip Path**: ✅ YES (This is crucial!)
+### Required Variables & Secrets
 
-#### Why Strip Path?
+**Organization/Repository Variables:**
+- `DOKPLOY_URL` - Your Dokploy instance URL
+- `DOKPLOY_PROJECT_ID` - Target project ID
+- `DOKPLOY_ENVIRONMENT_ID` - Target environment ID
+- `DOKPLOY_GITHUB_ID` - GitHub integration ID in Dokploy
+- `DOKPLOY_SERVER_ID` - Server ID in Dokploy
 
-The Strip Path middleware removes `/etdofresh/todo/main` from incoming requests before forwarding to your application.
+**Secrets:**
+- `DOKPLOY_API_KEY` - API key for Dokploy
 
-**Example:**
-- Request: `https://github.etdofresh.com/etdofresh/todo/main/api/todos`
-- After Strip Path: `/api/todos` → forwarded to your app on port 3000
+## Manual Configuration (If Needed)
 
-Without Strip Path, your app would receive `/etdofresh/todo/main/api/todos` and return 404 since it doesn't have routes with that prefix.
+You should not need manual configuration, but if you want to create an application manually:
 
-### 3. Environment Variables
-
-No environment variables are required for basic setup. The app uses SQLite for storage.
-
-### 4. Persistent Storage (Optional)
+### Persistent Storage (Optional)
 
 For data persistence across deployments:
 
@@ -50,64 +51,52 @@ For data persistence across deployments:
    - **Container Path**: `/app`
    - This persists the `todos.db` file
 
-### 5. Port Configuration
-
-- **Container Port**: 3000
-- **Protocol**: HTTP
-
 ## Multi-Branch Deployment
 
-For deploying multiple branches:
+Deploying multiple branches is automatic! Each push to a branch creates a new application:
 
-### Branch: `feature/new-feature`
+### Example: Branch `feature/new-feature`
 
-1. **Application Name**: `todo-feature-new-feature`
-2. **Image**: `ghcr.io/etdofresh/todo:feature-new-feature`
-3. **Domain Path**: `/etdofresh/todo/feature-new-feature`
-4. **Strip Path**: ✅ Enabled
-5. **Live URL**: `https://github.etdofresh.com/etdofresh/todo/feature-new-feature/`
+1. Push code to `feature/new-feature`
+2. Workflow automatically creates: `webedt-todo-feature-new-feature`
+3. **Live URL**: `https://webedt-todo-feature-new-feature.etdofresh.com`
+4. When branch is deleted, the application is automatically cleaned up
 
-### Automation with GitHub Actions
+### Domain Naming Strategy
 
-The `.github/workflows/deploy.yml` file automatically:
-1. Builds Docker images for every branch
-2. Tags images as `ghcr.io/etdofresh/todo:{branch-name}`
-3. Pushes to GitHub Container Registry
+The workflow uses a progressive fallback to fit within DNS's 63-character subdomain limit:
 
-You need to manually create the Dokploy application for each branch you want to deploy.
+1. Try `{owner}-{repo}-{branch}` (preferred)
+2. Fall back to `{repo}-{branch}` if too long
+3. Further strategies if still too long (see workflow for details)
 
-## Traefik Configuration (Advanced)
+## Cleanup on Branch Delete
 
-Dokploy uses Traefik for routing. The Strip Path middleware is configured automatically when you enable it in the Dokploy UI.
-
-If you need manual configuration, the Traefik middleware would look like:
-
-```yaml
-http:
-  middlewares:
-    strip-todo-main:
-      stripPrefix:
-        prefixes:
-          - "/etdofresh/todo/main"
-```
+The `cleanup-dokploy.yml` workflow automatically:
+1. Detects branch deletions
+2. Finds the matching Dokploy application
+3. Deletes the application and all resources
 
 ## Troubleshooting
 
-### Issue: 404 errors on all routes
+### Issue: Workflow fails with "Application creation failed"
 
-**Solution**: Ensure Strip Path is enabled in Dokploy domain settings.
+**Solution**: Check that all required variables and secrets are configured in GitHub settings.
 
-### Issue: Static files not loading
+### Issue: Domain not accessible after deployment
 
-**Solution**: The app serves static files from `/dist/public`. Ensure your Docker build includes these files.
+**Solution**:
+- Verify wildcard DNS `*.etdofresh.com` is configured correctly
+- Check Dokploy logs for SSL certificate provisioning status
+- Let's Encrypt may take a few minutes to provision
 
 ### Issue: Database resets on redeploy
 
-**Solution**: Configure a persistent volume as described above.
+**Solution**: Configure a persistent volume in Dokploy (see Persistent Storage section above).
 
-### Issue: GitHub Actions fails to push image
+### Issue: Deployment only happens once
 
-**Solution**: Ensure the repository has `packages: write` permission enabled in GitHub settings.
+**Solution**: This is by design! The workflow only triggers deployment on first creation. Subsequent pushes update the configuration but Dokploy handles the actual rebuild via GitHub webhooks.
 
 ## Monitoring
 
@@ -120,5 +109,5 @@ View logs in Dokploy:
 
 After deploying to the `main` branch:
 
-- **GitHub Branch**: https://github.com/ETdoFresh/todo/tree/main
-- **Live Site**: https://github.etdofresh.com/etdofresh/todo/main/
+- **GitHub Branch**: https://github.com/webedt/todo/tree/main
+- **Live Site**: https://webedt-todo-main.etdofresh.com
