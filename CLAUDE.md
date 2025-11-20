@@ -17,7 +17,7 @@ Live Site: https://github.etdofresh.com/{owner}/{repo}/{branch}/
 - Pattern: `github.etdofresh.com/{owner}/{repo}/{branch}/`
 - Owner: `webedt` (lowercase)
 - Repo: `todo` (lowercase)
-- Branch: branch name with slashes replaced by hyphens
+- Branch: branch name with slashes replaced by hyphens **AND converted to lowercase**
 
 ### Example
 
@@ -28,6 +28,10 @@ For branch `main`:
 For branch `feature/edit-todos`:
 - GitHub Branch: https://github.com/webedt/todo/tree/feature/edit-todos
 - Live Site: https://github.etdofresh.com/webedt/todo/feature-edit-todos/
+
+For branch `claude/realtime-todo-sync-01ApFHTgUHtGdNKrYFSEj8iN`:
+- GitHub Branch: https://github.com/webedt/todo/tree/claude/realtime-todo-sync-01ApFHTgUHtGdNKrYFSEj8iN
+- Live Site: https://github.etdofresh.com/webedt/todo/claude-realtime-todo-sync-01apfhtguhtgdnkryfsej8in/
 
 ## Deployment Configuration
 
