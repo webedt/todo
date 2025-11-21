@@ -468,6 +468,10 @@ async function handleNameSubmit() {
     }
 }
 
+// Track if UI event listeners have been set up
+let uiEventListenersSetup = false;
+let currentSSE = null;
+
 // Setup app functionality after user login
 async function setupAppAfterLogin() {
     updateTitle();
@@ -475,8 +479,19 @@ async function setupAppAfterLogin() {
     // Load todos
     await loadTodos();
 
+    // Close existing SSE connection if any
+    if (currentSSE) {
+        currentSSE.close();
+    }
+
     // Setup real-time sync
-    setupSSE();
+    currentSSE = setupSSE();
+
+    // Only set up UI event listeners once
+    if (uiEventListenersSetup) {
+        return;
+    }
+    uiEventListenersSetup = true;
 
     // Add todo event
     const addBtn = document.getElementById('add-btn');
@@ -586,6 +601,15 @@ function setupSSE() {
             eventSource.close();
         }
     });
+
+    // Return an object with a close method
+    return {
+        close: () => {
+            if (eventSource) {
+                eventSource.close();
+            }
+        }
+    };
 }
 
 // Get theme emoji
@@ -661,6 +685,7 @@ async function init() {
         if (userId && userId !== currentUserId) {
             const user = await loadUserFromUrl();
             if (user) {
+                hideNameModal();
                 await setupAppAfterLogin();
             } else {
                 showNameModal();
@@ -669,6 +694,38 @@ async function init() {
             // User navigated back to home, clear current user
             clearCurrentUser();
             showNameModal();
+        }
+    });
+
+    // Handle URL changes when user manually changes URL or clicks links
+    // Check when window regains focus or becomes visible
+    let lastCheckedUrl = window.location.pathname;
+
+    async function checkUrlChange() {
+        const currentUrl = window.location.pathname;
+        if (currentUrl !== lastCheckedUrl) {
+            lastCheckedUrl = currentUrl;
+
+            const userId = getUserIdFromUrl();
+            if (userId && userId !== currentUserId) {
+                const user = await loadUserFromUrl();
+                if (user) {
+                    hideNameModal();
+                    await setupAppAfterLogin();
+                } else {
+                    showNameModal();
+                }
+            } else if (!userId && currentUserId) {
+                clearCurrentUser();
+                showNameModal();
+            }
+        }
+    }
+
+    window.addEventListener('focus', checkUrlChange);
+    window.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            checkUrlChange();
         }
     });
 
