@@ -2,25 +2,29 @@
 let currentUserId = null;
 let currentUserDisplayName = null;
 
-// Get the base path for the deployment (e.g., /webedt/todo/branch/)
-// This is everything up to where index.html is served
-function getBasePath() {
-    const scriptPath = document.currentScript?.src || window.location.href;
-    const url = new URL(scriptPath);
-    let pathname = url.pathname;
+// Calculate base path once on script load
+// Find where app.js is loaded from to determine the deployment path
+let cachedBasePath = null;
 
-    // If it's a script, remove the filename
-    if (pathname.endsWith('.js')) {
-        pathname = pathname.substring(0, pathname.lastIndexOf('/'));
+function calculateBasePath() {
+    // Try to find the app.js script tag
+    const scripts = document.getElementsByTagName('script');
+    for (let script of scripts) {
+        if (script.src && script.src.includes('app.js')) {
+            const url = new URL(script.src);
+            let pathname = url.pathname;
+            // Remove /app.js to get the directory
+            pathname = pathname.substring(0, pathname.lastIndexOf('/'));
+            return pathname.endsWith('/') ? pathname : pathname + '/';
+        }
     }
 
-    // For the main page, use the current pathname without user ID
+    // Fallback: use current pathname and remove potential user ID
     const currentPath = window.location.pathname;
     const segments = currentPath.split('/').filter(s => s.length > 0);
 
     // User IDs will be very long (40+ chars with name + 32 random)
-    // Deployment paths are typically shorter
-    // Remove the last segment if it looks like a user ID (very long with hyphen)
+    // Remove the last segment if it looks like a user ID
     if (segments.length > 0) {
         const lastSegment = segments[segments.length - 1];
         if (lastSegment.includes('-') && lastSegment.length > 40) {
@@ -30,6 +34,14 @@ function getBasePath() {
 
     const basePath = '/' + segments.join('/');
     return basePath.endsWith('/') ? basePath : basePath + '/';
+}
+
+// Get the base path for the deployment (e.g., /webedt/todo/branch/)
+function getBasePath() {
+    if (!cachedBasePath) {
+        cachedBasePath = calculateBasePath();
+    }
+    return cachedBasePath;
 }
 
 function getUserIdFromUrl() {
