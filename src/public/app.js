@@ -88,6 +88,10 @@ async function loadUserById(userId) {
             const user = await res.json();
             currentUserId = user.userId;
             currentUserDisplayName = user.displayName;
+
+            // Always remember the user when loading from URL
+            localStorage.setItem('todoAppUserId', user.userId);
+
             return user;
         } else {
             console.error('Failed to load user:', res.status, res.statusText);
@@ -103,7 +107,7 @@ async function loadUserFromUrl() {
     return await loadUserById(userId);
 }
 
-async function createUserAndRedirect(displayName, rememberMe = false) {
+async function createUserAndRedirect(displayName) {
     try {
         const res = await fetch(getApiUrl('api/users'), {
             method: 'POST',
@@ -116,9 +120,8 @@ async function createUserAndRedirect(displayName, rememberMe = false) {
             currentUserId = user.userId;
             currentUserDisplayName = user.displayName;
 
-            if (rememberMe) {
-                localStorage.setItem('todoAppUserId', user.userId);
-            }
+            // Always remember the user
+            localStorage.setItem('todoAppUserId', user.userId);
 
             setUrlWithUserId(user.userId);
             return user;
@@ -438,7 +441,6 @@ function showNameModal() {
     modal.classList.add('show');
     const nameInput = document.getElementById('name-input');
     nameInput.value = '';
-    document.getElementById('remember-me').checked = false;
     nameInput.focus();
 }
 
@@ -451,11 +453,10 @@ function hideNameModal() {
 // Handle name submission
 async function handleNameSubmit() {
     const nameInput = document.getElementById('name-input');
-    const rememberMe = document.getElementById('remember-me').checked;
     const displayName = nameInput.value.trim();
 
     if (displayName) {
-        const user = await createUserAndRedirect(displayName, rememberMe);
+        const user = await createUserAndRedirect(displayName);
         if (user) {
             hideNameModal();
             await setupAppAfterLogin();
