@@ -11,6 +11,12 @@ export interface Todo {
   userName: string;
 }
 
+export interface User {
+  userId: string;
+  displayName: string;
+  createdAt: string;
+}
+
 export interface Settings {
   theme: string;
 }
@@ -35,6 +41,15 @@ class TodoDatabase {
     } else {
       this.db = new SQL.Database();
     }
+
+    // Create users table
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        user_id TEXT PRIMARY KEY,
+        display_name TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     // Create todos table
     this.db.run(`
@@ -162,6 +177,60 @@ class TodoDatabase {
     if (!this.db) return;
     this.db.run('UPDATE todos SET cleared = 1 WHERE completed = 1 AND cleared = 0');
     this.save();
+  }
+
+  // User operations
+  generateUserId(displayName: string): string {
+    // Sanitize the display name for URL use
+    const sanitized = displayName.toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    // Generate 32 random characters (alphanumeric)
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let randomSuffix = '';
+    for (let i = 0; i < 32; i++) {
+      randomSuffix += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    return `${sanitized}-${randomSuffix}`;
+  }
+
+  createUser(displayName: string): User {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const userId = this.generateUserId(displayName);
+    const now = new Date().toISOString();
+
+    this.db.run('INSERT INTO users (user_id, display_name, created_at) VALUES (?, ?, ?)',
+      [userId, displayName, now]);
+    this.save();
+
+    return {
+      userId,
+      displayName,
+      createdAt: now
+    };
+  }
+
+  getUserById(userId: string): User | undefined {
+    if (!this.db) return undefined;
+    const result = this.db.exec('SELECT * FROM users WHERE user_id = ?', [userId]);
+    if (result.length === 0 || result[0].values.length === 0) return undefined;
+
+    const row = result[0].values[0];
+    const columns = result[0].columns;
+    const obj: any = {};
+    columns.forEach((col: string, i: number) => {
+      obj[col] = row[i];
+    });
+
+    return {
+      userId: obj.user_id,
+      displayName: obj.display_name,
+      createdAt: obj.created_at
+    };
   }
 
   // Settings operations

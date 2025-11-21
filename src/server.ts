@@ -30,10 +30,28 @@ async function startServer() {
 
 // API Routes
 
-// Get current user
-app.get('/api/user', (req: Request, res: Response) => {
-    const userName = db.getTheme(); // We'll store current user in settings
-    res.json({ userName: 'Guest' }); // Default for now, handled by frontend
+// Create a new user
+app.post('/api/users', (req: Request, res: Response) => {
+    const { displayName } = req.body;
+
+    if (!displayName || typeof displayName !== 'string') {
+        return res.status(400).json({ error: 'Display name is required' });
+    }
+
+    const user = db.createUser(displayName);
+    res.json(user);
+});
+
+// Get user by ID
+app.get('/api/users/:userId', (req: Request, res: Response) => {
+    const userId = req.params.userId;
+    const user = db.getUserById(userId);
+
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
 });
 
 // Server-Sent Events endpoint for real-time updates
@@ -195,6 +213,17 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve the main page
 app.get('/', (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Catch-all route for user paths (SPA routing)
+// This serves index.html for any path that looks like a user ID
+app.get('*', (req: Request, res: Response) => {
+    // Only serve index.html for non-API routes
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        res.status(404).json({ error: 'Not found' });
+    }
 });
 
   // Start server

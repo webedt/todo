@@ -1,38 +1,148 @@
 // User session management
-let currentUser = null;
+let currentUserId = null;
+let currentUserDisplayName = null;
 
-function getCurrentUser() {
-    if (!currentUser) {
-        const stored = localStorage.getItem('todoAppUser');
-        if (stored) {
-            const userData = JSON.parse(stored);
-            if (userData.rememberMe) {
-                currentUser = userData.userName;
-            }
+// Calculate base path once on script load
+// Find where app.js is loaded from to determine the deployment path
+let cachedBasePath = null;
+
+function calculateBasePath() {
+    // Try to find the app.js script tag
+    const scripts = document.getElementsByTagName('script');
+    for (let script of scripts) {
+        if (script.src && script.src.includes('app.js')) {
+            const url = new URL(script.src);
+            let pathname = url.pathname;
+            // Remove /app.js to get the directory
+            pathname = pathname.substring(0, pathname.lastIndexOf('/'));
+            return pathname.endsWith('/') ? pathname : pathname + '/';
         }
     }
-    return currentUser;
+
+    // Fallback: use current pathname and remove potential user ID
+    const currentPath = window.location.pathname;
+    const segments = currentPath.split('/').filter(s => s.length > 0);
+
+    // User IDs will be very long (40+ chars with name + 32 random)
+    // Remove the last segment if it looks like a user ID
+    if (segments.length > 0) {
+        const lastSegment = segments[segments.length - 1];
+        if (lastSegment.includes('-') && lastSegment.length > 40) {
+            segments.pop();
+        }
+    }
+
+    const basePath = '/' + segments.join('/');
+    return basePath.endsWith('/') ? basePath : basePath + '/';
 }
 
-function setCurrentUser(userName, rememberMe = false) {
-    currentUser = userName;
-    if (rememberMe) {
-        localStorage.setItem('todoAppUser', JSON.stringify({ userName, rememberMe }));
-    } else {
-        localStorage.removeItem('todoAppUser');
+// Get the base path for the deployment (e.g., /webedt/todo/branch/)
+function getBasePath() {
+    if (!cachedBasePath) {
+        cachedBasePath = calculateBasePath();
     }
-    updateTitle();
+    return cachedBasePath;
+}
+
+function getUserIdFromUrl() {
+    const pathname = window.location.pathname;
+    const basePath = getBasePath();
+
+    // Get the part after the base path
+    const relativePath = pathname.startsWith(basePath)
+        ? pathname.substring(basePath.length)
+        : pathname;
+
+    // Remove leading/trailing slashes
+    const userPart = relativePath.replace(/^\/+|\/+$/g, '');
+
+    // Check if it looks like a user ID (contains hyphen and is very long - 40+ chars)
+    if (userPart && userPart.includes('-') && userPart.length > 40 && !userPart.includes('/')) {
+        return userPart;
+    }
+
+    return null;
+}
+
+function setUrlWithUserId(userId) {
+    const basePath = getBasePath();
+    const newPath = basePath + userId;
+    window.history.pushState({userId}, '', newPath);
+}
+
+// Helper to get API URL with correct base path
+function getApiUrl(endpoint) {
+    const basePath = getBasePath();
+    // Remove leading slash from endpoint if present
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+    // Combine base path with api endpoint
+    return basePath + cleanEndpoint;
+}
+
+async function loadUserById(userId) {
+    if (!userId) return null;
+
+    try {
+        const res = await fetch(getApiUrl(`api/users/${userId}`));
+        if (res.ok) {
+            const user = await res.json();
+            currentUserId = user.userId;
+            currentUserDisplayName = user.displayName;
+            return user;
+        } else {
+            console.error('Failed to load user:', res.status, res.statusText);
+        }
+    } catch (error) {
+        console.error('Failed to load user:', error);
+    }
+    return null;
+}
+
+async function loadUserFromUrl() {
+    const userId = getUserIdFromUrl();
+    return await loadUserById(userId);
+}
+
+async function createUserAndRedirect(displayName, rememberMe = false) {
+    try {
+        const res = await fetch(getApiUrl('api/users'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ displayName })
+        });
+
+        if (res.ok) {
+            const user = await res.json();
+            currentUserId = user.userId;
+            currentUserDisplayName = user.displayName;
+
+            if (rememberMe) {
+                localStorage.setItem('todoAppUserId', user.userId);
+            }
+
+            setUrlWithUserId(user.userId);
+            return user;
+        }
+    } catch (error) {
+        console.error('Failed to create user:', error);
+    }
+    return null;
 }
 
 function clearCurrentUser() {
-    currentUser = null;
-    localStorage.removeItem('todoAppUser');
+    currentUserId = null;
+    currentUserDisplayName = null;
+    localStorage.removeItem('todoAppUserId');
+
+    // Navigate back to base path, removing the user ID
+    const basePath = getBasePath();
+    window.history.pushState({}, '', basePath);
 }
 
 function updateTitle() {
     const title = document.getElementById('app-title');
-    if (currentUser) {
-        title.textContent = `📝 ${currentUser} Todos`;
+    if (currentUserDisplayName) {
+        title.textContent = `📝 ${currentUserDisplayName}'s Todos`;
     } else {
         title.textContent = '📝 Todo App';
     }
@@ -41,42 +151,38 @@ function updateTitle() {
 // API helper functions
 const API = {
     async getTodos() {
-        const userName = getCurrentUser();
-        const res = await fetch(`./api/todos?userName=${encodeURIComponent(userName)}`);
+        const res = await fetch(getApiUrl(`api/todos?userName=${encodeURIComponent(currentUserId)}`));
         return res.json();
     },
 
     async getUncompletedTodos() {
-        const userName = getCurrentUser();
-        const res = await fetch(`./api/todos/uncompleted?userName=${encodeURIComponent(userName)}`);
+        const res = await fetch(getApiUrl(`api/todos/uncompleted?userName=${encodeURIComponent(currentUserId)}`));
         return res.json();
     },
 
     async getCompletedTodos() {
-        const userName = getCurrentUser();
-        const res = await fetch(`./api/todos/completed?userName=${encodeURIComponent(userName)}`);
+        const res = await fetch(getApiUrl(`api/todos/completed?userName=${encodeURIComponent(currentUserId)}`));
         return res.json();
     },
 
     async addTodo(title) {
-        const userName = getCurrentUser();
-        const res = await fetch('./api/todos', {
+        const res = await fetch(getApiUrl('api/todos'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, userName })
+            body: JSON.stringify({ title, userName: currentUserId })
         });
         return res.json();
     },
 
     async toggleTodo(id) {
-        const res = await fetch(`./api/todos/${id}/toggle`, {
+        const res = await fetch(getApiUrl(`api/todos/${id}/toggle`), {
             method: 'PUT'
         });
         return res.json();
     },
 
     async updateTodo(id, title) {
-        const res = await fetch(`./api/todos/${id}`, {
+        const res = await fetch(getApiUrl(`api/todos/${id}`), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title })
@@ -85,24 +191,23 @@ const API = {
     },
 
     async deleteTodo(id) {
-        await fetch(`./api/todos/${id}`, {
+        await fetch(getApiUrl(`api/todos/${id}`), {
             method: 'DELETE'
         });
     },
 
     async searchTodos(query) {
-        const userName = getCurrentUser();
-        const res = await fetch(`./api/todos/search?q=${encodeURIComponent(query)}&userName=${encodeURIComponent(userName)}`);
+        const res = await fetch(getApiUrl(`api/todos/search?q=${encodeURIComponent(query)}&userName=${encodeURIComponent(currentUserId)}`));
         return res.json();
     },
 
     async getTheme() {
-        const res = await fetch('./api/theme');
+        const res = await fetch(getApiUrl('api/theme'));
         return res.json();
     },
 
     async setTheme(theme) {
-        const res = await fetch('./api/theme', {
+        const res = await fetch(getApiUrl('api/theme'), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ theme })
@@ -111,7 +216,7 @@ const API = {
     },
 
     async clearCompletedTodos() {
-        const res = await fetch('./api/todos/clear-completed', {
+        const res = await fetch(getApiUrl('api/todos/clear-completed'), {
             method: 'POST'
         });
         return res.json();
@@ -347,12 +452,16 @@ function hideNameModal() {
 async function handleNameSubmit() {
     const nameInput = document.getElementById('name-input');
     const rememberMe = document.getElementById('remember-me').checked;
-    const userName = nameInput.value.trim();
+    const displayName = nameInput.value.trim();
 
-    if (userName) {
-        setCurrentUser(userName, rememberMe);
-        hideNameModal();
-        await setupAppAfterLogin();
+    if (displayName) {
+        const user = await createUserAndRedirect(displayName, rememberMe);
+        if (user) {
+            hideNameModal();
+            await setupAppAfterLogin();
+        } else {
+            alert('Failed to create user. Please try again.');
+        }
     } else {
         nameInput.focus();
     }
@@ -436,7 +545,7 @@ function setupSSE() {
     let eventSource;
 
     function connect() {
-        eventSource = new EventSource('./api/events');
+        eventSource = new EventSource(getApiUrl('api/events'));
 
         eventSource.onopen = () => {
             console.log('✓ Real-time sync connected');
@@ -545,8 +654,44 @@ async function init() {
         showNameModal();
     });
 
-    // Check if user is already logged in
-    const user = getCurrentUser();
+    // Handle URL path changes (when user navigates back/forward)
+    window.addEventListener('popstate', async () => {
+        const userId = getUserIdFromUrl();
+        if (userId && userId !== currentUserId) {
+            const user = await loadUserFromUrl();
+            if (user) {
+                await setupAppAfterLogin();
+            } else {
+                showNameModal();
+            }
+        } else if (!userId && currentUserId) {
+            // User navigated back to home, clear current user
+            clearCurrentUser();
+            showNameModal();
+        }
+    });
+
+    // Check if user ID is in URL
+    let user = await loadUserFromUrl();
+
+    // If not in URL, check if user is remembered
+    if (!user) {
+        const rememberedUserId = localStorage.getItem('todoAppUserId');
+        if (rememberedUserId) {
+            // Try to load the remembered user
+            user = await loadUserById(rememberedUserId);
+
+            if (user) {
+                // User exists, update URL to show their ID
+                setUrlWithUserId(rememberedUserId);
+            } else {
+                // User no longer exists in database, clear localStorage
+                console.log('Remembered user not found, clearing localStorage');
+                localStorage.removeItem('todoAppUserId');
+            }
+        }
+    }
+
     if (!user) {
         showNameModal();
         return; // Don't load todos until user enters name
