@@ -23,11 +23,11 @@ function calculateBasePath() {
     const currentPath = window.location.pathname;
     const segments = currentPath.split('/').filter(s => s.length > 0);
 
-    // User IDs will be very long (40+ chars with name + 32 random)
+    // User IDs will be long (name + hyphen + 32 random chars, min ~34 chars)
     // Remove the last segment if it looks like a user ID
     if (segments.length > 0) {
         const lastSegment = segments[segments.length - 1];
-        if (lastSegment.includes('-') && lastSegment.length > 40) {
+        if (lastSegment.includes('-') && lastSegment.length >= 33) {
             segments.pop();
         }
     }
@@ -56,8 +56,8 @@ function getUserIdFromUrl() {
     // Remove leading/trailing slashes
     const userPart = relativePath.replace(/^\/+|\/+$/g, '');
 
-    // Check if it looks like a user ID (contains hyphen and is very long - 40+ chars)
-    if (userPart && userPart.includes('-') && userPart.length > 40 && !userPart.includes('/')) {
+    // Check if it looks like a user ID (contains hyphen, min ~34 chars: name + hyphen + 32 random)
+    if (userPart && userPart.includes('-') && userPart.length >= 33 && !userPart.includes('/')) {
         return userPart;
     }
 
@@ -88,6 +88,10 @@ async function loadUserById(userId) {
             const user = await res.json();
             currentUserId = user.userId;
             currentUserDisplayName = user.displayName;
+
+            // Always remember the user when loading from URL
+            localStorage.setItem('todoAppUserId', user.userId);
+
             return user;
         } else {
             console.error('Failed to load user:', res.status, res.statusText);
@@ -103,7 +107,7 @@ async function loadUserFromUrl() {
     return await loadUserById(userId);
 }
 
-async function createUserAndRedirect(displayName, rememberMe = false) {
+async function createUserAndRedirect(displayName) {
     try {
         const res = await fetch(getApiUrl('api/users'), {
             method: 'POST',
@@ -116,9 +120,8 @@ async function createUserAndRedirect(displayName, rememberMe = false) {
             currentUserId = user.userId;
             currentUserDisplayName = user.displayName;
 
-            if (rememberMe) {
-                localStorage.setItem('todoAppUserId', user.userId);
-            }
+            // Always remember the user
+            localStorage.setItem('todoAppUserId', user.userId);
 
             setUrlWithUserId(user.userId);
             return user;
@@ -438,7 +441,6 @@ function showNameModal() {
     modal.classList.add('show');
     const nameInput = document.getElementById('name-input');
     nameInput.value = '';
-    document.getElementById('remember-me').checked = false;
     nameInput.focus();
 }
 
@@ -451,11 +453,10 @@ function hideNameModal() {
 // Handle name submission
 async function handleNameSubmit() {
     const nameInput = document.getElementById('name-input');
-    const rememberMe = document.getElementById('remember-me').checked;
     const displayName = nameInput.value.trim();
 
     if (displayName) {
-        const user = await createUserAndRedirect(displayName, rememberMe);
+        const user = await createUserAndRedirect(displayName);
         if (user) {
             hideNameModal();
             await setupAppAfterLogin();
@@ -467,6 +468,10 @@ async function handleNameSubmit() {
     }
 }
 
+// Track if UI event listeners have been set up
+let uiEventListenersSetup = false;
+let currentSSE = null;
+
 // Setup app functionality after user login
 async function setupAppAfterLogin() {
     updateTitle();
@@ -474,8 +479,19 @@ async function setupAppAfterLogin() {
     // Load todos
     await loadTodos();
 
+    // Close existing SSE connection if any
+    if (currentSSE) {
+        currentSSE.close();
+    }
+
     // Setup real-time sync
-    setupSSE();
+    currentSSE = setupSSE();
+
+    // Only set up UI event listeners once
+    if (uiEventListenersSetup) {
+        return;
+    }
+    uiEventListenersSetup = true;
 
     // Add todo event
     const addBtn = document.getElementById('add-btn');
@@ -585,6 +601,15 @@ function setupSSE() {
             eventSource.close();
         }
     });
+
+    // Return an object with a close method
+    return {
+        close: () => {
+            if (eventSource) {
+                eventSource.close();
+            }
+        }
+    };
 }
 
 // Get theme emoji
@@ -660,6 +685,7 @@ async function init() {
         if (userId && userId !== currentUserId) {
             const user = await loadUserFromUrl();
             if (user) {
+                hideNameModal();
                 await setupAppAfterLogin();
             } else {
                 showNameModal();
@@ -668,6 +694,38 @@ async function init() {
             // User navigated back to home, clear current user
             clearCurrentUser();
             showNameModal();
+        }
+    });
+
+    // Handle URL changes when user manually changes URL or clicks links
+    // Check when window regains focus or becomes visible
+    let lastCheckedUrl = window.location.pathname;
+
+    async function checkUrlChange() {
+        const currentUrl = window.location.pathname;
+        if (currentUrl !== lastCheckedUrl) {
+            lastCheckedUrl = currentUrl;
+
+            const userId = getUserIdFromUrl();
+            if (userId && userId !== currentUserId) {
+                const user = await loadUserFromUrl();
+                if (user) {
+                    hideNameModal();
+                    await setupAppAfterLogin();
+                } else {
+                    showNameModal();
+                }
+            } else if (!userId && currentUserId) {
+                clearCurrentUser();
+                showNameModal();
+            }
+        }
+    }
+
+    window.addEventListener('focus', checkUrlChange);
+    window.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            checkUrlChange();
         }
     });
 
