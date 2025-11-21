@@ -23,11 +23,11 @@ function calculateBasePath() {
     const currentPath = window.location.pathname;
     const segments = currentPath.split('/').filter(s => s.length > 0);
 
-    // User IDs will be very long (40+ chars with name + 32 random)
+    // User IDs will be long (name + hyphen + 32 random chars, min ~34 chars)
     // Remove the last segment if it looks like a user ID
     if (segments.length > 0) {
         const lastSegment = segments[segments.length - 1];
-        if (lastSegment.includes('-') && lastSegment.length > 40) {
+        if (lastSegment.includes('-') && lastSegment.length >= 33) {
             segments.pop();
         }
     }
@@ -56,8 +56,8 @@ function getUserIdFromUrl() {
     // Remove leading/trailing slashes
     const userPart = relativePath.replace(/^\/+|\/+$/g, '');
 
-    // Check if it looks like a user ID (contains hyphen and is very long - 40+ chars)
-    if (userPart && userPart.includes('-') && userPart.length > 40 && !userPart.includes('/')) {
+    // Check if it looks like a user ID (contains hyphen, min ~34 chars: name + hyphen + 32 random)
+    if (userPart && userPart.includes('-') && userPart.length >= 33 && !userPart.includes('/')) {
         return userPart;
     }
 
