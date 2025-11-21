@@ -79,8 +79,7 @@ function getApiUrl(endpoint) {
     return basePath + cleanEndpoint;
 }
 
-async function loadUserFromUrl() {
-    const userId = getUserIdFromUrl();
+async function loadUserById(userId) {
     if (!userId) return null;
 
     try {
@@ -90,11 +89,18 @@ async function loadUserFromUrl() {
             currentUserId = user.userId;
             currentUserDisplayName = user.displayName;
             return user;
+        } else {
+            console.error('Failed to load user:', res.status, res.statusText);
         }
     } catch (error) {
         console.error('Failed to load user:', error);
     }
     return null;
+}
+
+async function loadUserFromUrl() {
+    const userId = getUserIdFromUrl();
+    return await loadUserById(userId);
 }
 
 async function createUserAndRedirect(displayName, rememberMe = false) {
@@ -672,8 +678,17 @@ async function init() {
     if (!user) {
         const rememberedUserId = localStorage.getItem('todoAppUserId');
         if (rememberedUserId) {
-            setUrlWithUserId(rememberedUserId);
-            user = await loadUserFromUrl();
+            // Try to load the remembered user
+            user = await loadUserById(rememberedUserId);
+
+            if (user) {
+                // User exists, update URL to show their ID
+                setUrlWithUserId(rememberedUserId);
+            } else {
+                // User no longer exists in database, clear localStorage
+                console.log('Remembered user not found, clearing localStorage');
+                localStorage.removeItem('todoAppUserId');
+            }
         }
     }
 
