@@ -2,35 +2,69 @@
 let currentUserId = null;
 let currentUserDisplayName = null;
 
-function getUserIdFromUrl() {
-    const pathname = window.location.pathname;
-    // Remove leading/trailing slashes and get the last segment
-    const segments = pathname.split('/').filter(s => s.length > 0);
+// Get the base path for the deployment (e.g., /webedt/todo/branch/)
+// This is everything up to where index.html is served
+function getBasePath() {
+    const scriptPath = document.currentScript?.src || window.location.href;
+    const url = new URL(scriptPath);
+    let pathname = url.pathname;
 
-    // The user ID should be the last segment (after any deployment path)
+    // If it's a script, remove the filename
+    if (pathname.endsWith('.js')) {
+        pathname = pathname.substring(0, pathname.lastIndexOf('/'));
+    }
+
+    // For the main page, use the current pathname without user ID
+    const currentPath = window.location.pathname;
+    const segments = currentPath.split('/').filter(s => s.length > 0);
+
+    // User IDs will be very long (40+ chars with name + 32 random)
+    // Deployment paths are typically shorter
+    // Remove the last segment if it looks like a user ID (very long with hyphen)
     if (segments.length > 0) {
         const lastSegment = segments[segments.length - 1];
-        // Check if it looks like a user ID (contains a hyphen and is reasonably long)
-        if (lastSegment.includes('-') && lastSegment.length > 10) {
-            return lastSegment;
+        if (lastSegment.includes('-') && lastSegment.length > 40) {
+            segments.pop();
         }
     }
+
+    const basePath = '/' + segments.join('/');
+    return basePath.endsWith('/') ? basePath : basePath + '/';
+}
+
+function getUserIdFromUrl() {
+    const pathname = window.location.pathname;
+    const basePath = getBasePath();
+
+    // Get the part after the base path
+    const relativePath = pathname.startsWith(basePath)
+        ? pathname.substring(basePath.length)
+        : pathname;
+
+    // Remove leading/trailing slashes
+    const userPart = relativePath.replace(/^\/+|\/+$/g, '');
+
+    // Check if it looks like a user ID (contains hyphen and is very long - 40+ chars)
+    if (userPart && userPart.includes('-') && userPart.length > 40 && !userPart.includes('/')) {
+        return userPart;
+    }
+
     return null;
 }
 
 function setUrlWithUserId(userId) {
-    // Get the base path (everything before the user ID)
-    const pathname = window.location.pathname;
-    let basePath = pathname.endsWith('/') ? pathname : pathname + '/';
-
-    // If there's already a user ID, remove it
-    const currentUserId = getUserIdFromUrl();
-    if (currentUserId && basePath.includes(currentUserId)) {
-        basePath = basePath.replace(currentUserId + '/', '').replace(currentUserId, '');
-    }
-
+    const basePath = getBasePath();
     const newPath = basePath + userId;
     window.history.pushState({userId}, '', newPath);
+}
+
+// Helper to get API URL with correct base path
+function getApiUrl(endpoint) {
+    const basePath = getBasePath();
+    // Remove leading slash from endpoint if present
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+    // Combine base path with api endpoint
+    return basePath + cleanEndpoint;
 }
 
 async function loadUserFromUrl() {
@@ -38,7 +72,7 @@ async function loadUserFromUrl() {
     if (!userId) return null;
 
     try {
-        const res = await fetch(`./api/users/${userId}`);
+        const res = await fetch(getApiUrl(`api/users/${userId}`));
         if (res.ok) {
             const user = await res.json();
             currentUserId = user.userId;
@@ -53,7 +87,7 @@ async function loadUserFromUrl() {
 
 async function createUserAndRedirect(displayName, rememberMe = false) {
     try {
-        const res = await fetch('./api/users', {
+        const res = await fetch(getApiUrl('api/users'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ displayName })
@@ -82,13 +116,9 @@ function clearCurrentUser() {
     currentUserDisplayName = null;
     localStorage.removeItem('todoAppUserId');
 
-    // Navigate back to root path, removing the user ID
-    const pathname = window.location.pathname;
-    const userId = getUserIdFromUrl();
-    if (userId && pathname.includes(userId)) {
-        const basePath = pathname.replace('/' + userId, '').replace(userId, '') || '/';
-        window.history.pushState({}, '', basePath);
-    }
+    // Navigate back to base path, removing the user ID
+    const basePath = getBasePath();
+    window.history.pushState({}, '', basePath);
 }
 
 function updateTitle() {
@@ -103,22 +133,22 @@ function updateTitle() {
 // API helper functions
 const API = {
     async getTodos() {
-        const res = await fetch(`./api/todos?userName=${encodeURIComponent(currentUserId)}`);
+        const res = await fetch(getApiUrl(`api/todos?userName=${encodeURIComponent(currentUserId)}`));
         return res.json();
     },
 
     async getUncompletedTodos() {
-        const res = await fetch(`./api/todos/uncompleted?userName=${encodeURIComponent(currentUserId)}`);
+        const res = await fetch(getApiUrl(`api/todos/uncompleted?userName=${encodeURIComponent(currentUserId)}`));
         return res.json();
     },
 
     async getCompletedTodos() {
-        const res = await fetch(`./api/todos/completed?userName=${encodeURIComponent(currentUserId)}`);
+        const res = await fetch(getApiUrl(`api/todos/completed?userName=${encodeURIComponent(currentUserId)}`));
         return res.json();
     },
 
     async addTodo(title) {
-        const res = await fetch('./api/todos', {
+        const res = await fetch(getApiUrl('api/todos'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title, userName: currentUserId })
@@ -127,14 +157,14 @@ const API = {
     },
 
     async toggleTodo(id) {
-        const res = await fetch(`./api/todos/${id}/toggle`, {
+        const res = await fetch(getApiUrl(`api/todos/${id}/toggle`), {
             method: 'PUT'
         });
         return res.json();
     },
 
     async updateTodo(id, title) {
-        const res = await fetch(`./api/todos/${id}`, {
+        const res = await fetch(getApiUrl(`api/todos/${id}`), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title })
@@ -143,23 +173,23 @@ const API = {
     },
 
     async deleteTodo(id) {
-        await fetch(`./api/todos/${id}`, {
+        await fetch(getApiUrl(`api/todos/${id}`), {
             method: 'DELETE'
         });
     },
 
     async searchTodos(query) {
-        const res = await fetch(`./api/todos/search?q=${encodeURIComponent(query)}&userName=${encodeURIComponent(currentUserId)}`);
+        const res = await fetch(getApiUrl(`api/todos/search?q=${encodeURIComponent(query)}&userName=${encodeURIComponent(currentUserId)}`));
         return res.json();
     },
 
     async getTheme() {
-        const res = await fetch('./api/theme');
+        const res = await fetch(getApiUrl('api/theme'));
         return res.json();
     },
 
     async setTheme(theme) {
-        const res = await fetch('./api/theme', {
+        const res = await fetch(getApiUrl('api/theme'), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ theme })
@@ -168,7 +198,7 @@ const API = {
     },
 
     async clearCompletedTodos() {
-        const res = await fetch('./api/todos/clear-completed', {
+        const res = await fetch(getApiUrl('api/todos/clear-completed'), {
             method: 'POST'
         });
         return res.json();
@@ -497,7 +527,7 @@ function setupSSE() {
     let eventSource;
 
     function connect() {
-        eventSource = new EventSource('./api/events');
+        eventSource = new EventSource(getApiUrl('api/events'));
 
         eventSource.onopen = () => {
             console.log('✓ Real-time sync connected');
