@@ -262,15 +262,11 @@ function parseMarkdown(text) {
     const links = [];
     let processed = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
         links.push({ text: linkText, url: url });
-        return `<<<LINK_${links.length - 1}>>>`;
+        return `<<<LINK${links.length - 1}>>>`;
     });
-
-    console.log('After link extraction:', processed);
-    console.log('Links found:', links);
 
     // Escape remaining HTML
     processed = escapeHtml(processed);
-    console.log('After escapeHtml:', processed);
 
     // Process bold (**text** or __text__)
     processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -280,23 +276,15 @@ function parseMarkdown(text) {
     processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
     processed = processed.replace(/_(.+?)_/g, '<em>$1</em>');
 
-    console.log('Before link restoration:', processed);
-
-    // Restore links (escaped as &lt;&lt;&lt;LINK_N&gt;&gt;&gt; after escapeHtml)
-    processed = processed.replace(/&lt;&lt;&lt;LINK_(\d+)&gt;&gt;&gt;/g, (match, index) => {
-        console.log('Restoring link:', match, 'index:', index);
+    // Restore links (escaped as &lt;&lt;&lt;LINKN&gt;&gt;&gt; after escapeHtml)
+    processed = processed.replace(/&lt;&lt;&lt;LINK(\d+)&gt;&gt;&gt;/g, (match, index) => {
         const link = links[parseInt(index)];
-        // If link doesn't exist at this index, return the original match
         if (!link) {
-            console.log('Link not found at index:', index);
             return match;
         }
-        const result = `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.text)}</a>`;
-        console.log('Restored to:', result);
-        return result;
+        return `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.text)}</a>`;
     });
 
-    console.log('Final result:', processed);
     return processed;
 }
 
@@ -349,11 +337,6 @@ function createTodoElement(todo) {
 
     const text = document.createElement('span');
     text.className = 'todo-text';
-    // Debug: log the original title and parsed result
-    if (todo.title.includes('LINK')) {
-        console.log('Original title:', todo.title);
-        console.log('Parsed result:', parseMarkdown(todo.title));
-    }
     text.innerHTML = parseMarkdown(todo.title);
 
     const editInput = document.createElement('input');
