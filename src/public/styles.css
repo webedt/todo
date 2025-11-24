@@ -19,9 +19,30 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 15px;
+}
+
+.info-notice {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.info-icon {
+    font-size: 1.1em;
+    flex-shrink: 0;
+}
+
+.info-text {
+    flex: 1;
 }
 
 .header-controls {
@@ -284,6 +305,11 @@ body[data-theme="dark"] .clear-completed-btn {
     color: white;
 }
 
+body[data-theme="dark"] .info-notice {
+    background-color: rgba(15, 52, 96, 0.3);
+    border: 1px solid rgba(15, 52, 96, 0.5);
+}
+
 /* Theme: Light */
 body[data-theme="light"] {
     background-color: #f5f5f5;
@@ -319,6 +345,11 @@ body[data-theme="light"] .todo-item button {
 body[data-theme="light"] .clear-completed-btn {
     background-color: #95a5a6;
     color: white;
+}
+
+body[data-theme="light"] .info-notice {
+    background-color: rgba(74, 144, 226, 0.1);
+    border: 1px solid rgba(74, 144, 226, 0.2);
 }
 
 /* Theme: Retro */
@@ -364,6 +395,11 @@ body[data-theme="retro"] .clear-completed-btn {
     color: #0f0f0f;
 }
 
+body[data-theme="retro"] .info-notice {
+    background-color: rgba(0, 255, 0, 0.1);
+    border: 1px solid rgba(0, 255, 0, 0.3);
+}
+
 /* Theme: Banana */
 body[data-theme="banana"] {
     background-color: #fff9e6;
@@ -399,6 +435,11 @@ body[data-theme="banana"] .todo-item button {
 body[data-theme="banana"] .clear-completed-btn {
     background-color: #ffb733;
     color: #5c4d00;
+}
+
+body[data-theme="banana"] .info-notice {
+    background-color: rgba(255, 224, 102, 0.3);
+    border: 1px solid rgba(255, 224, 102, 0.5);
 }
 
 /* Theme: Ice */
@@ -438,6 +479,11 @@ body[data-theme="ice"] .clear-completed-btn {
     color: #01579b;
 }
 
+body[data-theme="ice"] .info-notice {
+    background-color: rgba(129, 212, 250, 0.2);
+    border: 1px solid rgba(129, 212, 250, 0.4);
+}
+
 /* Theme: Forest */
 body[data-theme="forest"] {
     background-color: #1b2a1b;
@@ -473,6 +519,11 @@ body[data-theme="forest"] .todo-item button {
 body[data-theme="forest"] .clear-completed-btn {
     background-color: #a5d6a7;
     color: #1b2a1b;
+}
+
+body[data-theme="forest"] .info-notice {
+    background-color: rgba(76, 175, 80, 0.2);
+    border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 /* Age-based fading */
