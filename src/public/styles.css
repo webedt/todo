@@ -476,8 +476,18 @@ ul {
     font-family: inherit;
 }
 
-.edit-btn, .save-btn, .cancel-btn {
+.save-btn, .cancel-btn {
     min-width: 60px;
+}
+
+.edit-btn, .delete-btn {
+    padding: 8px 8px;
+    min-width: unset;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Theme: Dark (default) */

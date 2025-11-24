@@ -446,6 +446,7 @@ let touchStartY = 0;
 let touchStartX = 0;
 let touchElement = null;
 let touchPlaceholder = null;
+let isLocalReordering = false; // Flag to prevent SSE reload during local drag
 
 function handleDragStart(e) {
     // 'this' is the drag handle, we need to get the parent li
@@ -475,10 +476,16 @@ async function handleDragEnd(e) {
     // Only save if we have valid IDs
     if (todoIds.length > 0) {
         try {
+            isLocalReordering = true;
             await API.reorderTodos(todoIds);
             console.log('Reordered todos:', todoIds);
+            // Clear the flag after a delay to allow SSE message to arrive and be ignored
+            setTimeout(() => {
+                isLocalReordering = false;
+            }, 1000);
         } catch (error) {
             console.error('Failed to reorder todos:', error);
+            isLocalReordering = false;
             // Reload todos to restore order
             await loadTodos();
         }
@@ -583,10 +590,16 @@ async function handleTouchEnd(e) {
 
         if (todoIds.length > 0) {
             try {
+                isLocalReordering = true;
                 await API.reorderTodos(todoIds);
                 console.log('Reordered todos:', todoIds);
+                // Clear the flag after a delay to allow SSE message to arrive and be ignored
+                setTimeout(() => {
+                    isLocalReordering = false;
+                }, 1000);
             } catch (error) {
                 console.error('Failed to reorder todos:', error);
+                isLocalReordering = false;
                 await loadTodos();
             }
         }
@@ -862,12 +875,15 @@ function setupSSE() {
                     console.log('✓ SSE connection established');
                     break;
                 case 'todos-reordered':
-                    // Wait a couple frames for the database transaction to fully commit
-                    requestAnimationFrame(() => {
+                    // Skip reload if this was a local reorder operation
+                    if (!isLocalReordering) {
+                        // Wait a couple frames for the database transaction to fully commit
                         requestAnimationFrame(() => {
-                            loadTodos();
+                            requestAnimationFrame(() => {
+                                loadTodos();
+                            });
                         });
-                    });
+                    }
                     break;
                 case 'todo-added':
                 case 'todo-updated':
