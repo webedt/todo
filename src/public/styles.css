@@ -382,7 +382,6 @@ ul {
     border-radius: 8px;
     border: 2px solid;
     transition: opacity 0.3s, transform 0.2s;
-    cursor: move;
 }
 
 .todo-item:hover {
@@ -397,14 +396,17 @@ ul {
 .drag-handle {
     cursor: grab;
     font-size: 1.2em;
-    opacity: 0.5;
+    opacity: 0.6;
     user-select: none;
-    padding: 0 5px;
-    transition: opacity 0.2s;
+    padding: 5px 8px;
+    transition: opacity 0.2s, background-color 0.2s;
+    border-radius: 4px;
+    margin: -5px 0;
 }
 
 .drag-handle:hover {
     opacity: 1;
+    background-color: rgba(128, 128, 128, 0.2);
 }
 
 .drag-handle:active {

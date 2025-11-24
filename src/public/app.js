@@ -306,7 +306,7 @@ function createTodoElement(todo) {
     li.className = 'todo-item';
     li.dataset.id = todo.id;
     li.dataset.createdAt = todo.createdAt;
-    li.draggable = true;
+    li.draggable = false; // Disable default dragging
 
     if (!todo.completed) {
         const daysOld = getDaysOld(todo.createdAt);
@@ -322,6 +322,7 @@ function createTodoElement(todo) {
     dragHandle.className = 'drag-handle';
     dragHandle.innerHTML = '&#9776;'; // Hamburger icon
     dragHandle.title = 'Drag to reorder';
+    dragHandle.draggable = true; // Only the handle is draggable
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -425,11 +426,11 @@ function createTodoElement(todo) {
     li.appendChild(editInput);
     li.appendChild(buttonContainer);
 
-    // Drag events
-    li.addEventListener('dragstart', handleDragStart);
+    // Drag events - only on the drag handle
+    dragHandle.addEventListener('dragstart', handleDragStart);
     li.addEventListener('dragover', handleDragOver);
     li.addEventListener('drop', handleDrop);
-    li.addEventListener('dragend', handleDragEnd);
+    dragHandle.addEventListener('dragend', handleDragEnd);
 
     return li;
 }
@@ -438,10 +439,12 @@ function createTodoElement(todo) {
 let draggedElement = null;
 
 function handleDragStart(e) {
-    draggedElement = this;
-    this.classList.add('dragging');
+    // 'this' is the drag handle, we need to get the parent li
+    const todoItem = this.closest('.todo-item');
+    draggedElement = todoItem;
+    todoItem.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', this.innerHTML);
+    e.dataTransfer.setData('text/html', todoItem.innerHTML);
 }
 
 function handleDragOver(e) {
@@ -470,10 +473,12 @@ function handleDrop(e) {
 }
 
 async function handleDragEnd(e) {
-    this.classList.remove('dragging');
+    // 'this' is the drag handle, we need to get the parent li
+    const todoItem = this.closest('.todo-item');
+    todoItem.classList.remove('dragging');
 
     // Get the new order of todos
-    const list = this.parentNode;
+    const list = todoItem.parentNode;
     const todoIds = Array.from(list.children).map(li => parseInt(li.dataset.id));
 
     // Save the new order to the server
