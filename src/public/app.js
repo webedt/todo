@@ -348,6 +348,7 @@ function createTodoElement(todo) {
     const editInput = document.createElement('input');
     editInput.type = 'text';
     editInput.className = 'todo-edit-input';
+    editInput.name = `todo-edit-${todo.id}`;
     editInput.value = todo.title;
     editInput.style.display = 'none';
 

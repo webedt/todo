@@ -13,7 +13,7 @@
         <div class="modal-content">
             <h2>Welcome to Todo App!</h2>
             <p>Please enter your name to view your todos:</p>
-            <input type="text" id="name-input" placeholder="Enter your name..." />
+            <input type="text" id="name-input" name="user-name" placeholder="Enter your name..." />
             <button id="name-submit">Continue</button>
         </div>
     </div>
@@ -33,7 +33,7 @@
                     <div id="theme-toggle" class="theme-toggle" title="Theme">
                         <span id="theme-emoji">🌙</span>
                     </div>
-                    <select id="theme-select" class="theme-select-dropdown">
+                    <select id="theme-select" name="theme" class="theme-select-dropdown">
                         <option value="dark">🌙 Dark</option>
                         <option value="light">☀️ Light</option>
                         <option value="retro">👾 Retro</option>
@@ -61,12 +61,12 @@
 
         <div class="controls">
             <div class="add-todo">
-                <input type="text" id="new-todo" placeholder="Add a new todo..." />
+                <input type="text" id="new-todo" name="new-todo" placeholder="Add a new todo..." />
                 <button id="add-btn">Add</button>
             </div>
             <div class="filters">
-                <input type="text" id="search" placeholder="Search todos..." />
-                <select id="sort-select">
+                <input type="text" id="search" name="search" placeholder="Search todos..." />
+                <select id="sort-select" name="sort">
                     <option value="custom">Custom Order</option>
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
