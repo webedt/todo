@@ -25,10 +25,30 @@ header {
 }
 
 .header-left,
+.header-center,
 .header-right {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex: 1;
+}
+
+.header-left {
+    justify-content: flex-start;
+}
+
+.header-center {
+    justify-content: center;
+}
+
+.header-right {
+    justify-content: flex-end;
+}
+
+.header-title {
+    font-size: 0.95em;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 .info-notice {
