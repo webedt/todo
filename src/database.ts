@@ -7,6 +7,7 @@ export interface Todo {
   cleared: boolean;
   createdAt: string;
   completedAt: string | null;
+  deletedAt: string | null;
   userName: string;
   orderIndex: number;
 }
@@ -62,6 +63,7 @@ class TodoDatabase {
           cleared BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
           completed_at TIMESTAMPTZ,
+          deleted_at TIMESTAMPTZ,
           user_name TEXT NOT NULL DEFAULT 'Guest',
           order_index INTEGER DEFAULT 0
         )
@@ -76,6 +78,19 @@ class TodoDatabase {
             WHERE table_name = 'todos' AND column_name = 'order_index'
           ) THEN
             ALTER TABLE todos ADD COLUMN order_index INTEGER DEFAULT 0;
+          END IF;
+        END $$;
+      `);
+
+      // Add deleted_at column if it doesn't exist (migration)
+      await client.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'todos' AND column_name = 'deleted_at'
+          ) THEN
+            ALTER TABLE todos ADD COLUMN deleted_at TIMESTAMPTZ;
           END IF;
         END $$;
       `);
@@ -103,12 +118,12 @@ class TodoDatabase {
     if (!this.pool) return [];
     if (userName) {
       const result = await this.pool.query(
-        'SELECT * FROM todos WHERE user_name = $1 ORDER BY created_at DESC',
+        'SELECT * FROM todos WHERE user_name = $1 AND deleted_at IS NULL ORDER BY created_at DESC',
         [userName]
       );
       return result.rows.map(this.mapTodo);
     }
-    const result = await this.pool.query('SELECT * FROM todos ORDER BY created_at DESC');
+    const result = await this.pool.query('SELECT * FROM todos WHERE deleted_at IS NULL ORDER BY created_at DESC');
     return result.rows.map(this.mapTodo);
   }
 
@@ -116,13 +131,13 @@ class TodoDatabase {
     if (!this.pool) return [];
     if (userName) {
       const result = await this.pool.query(
-        'SELECT * FROM todos WHERE completed = FALSE AND user_name = $1 ORDER BY order_index ASC, created_at DESC',
+        'SELECT * FROM todos WHERE completed = FALSE AND deleted_at IS NULL AND user_name = $1 ORDER BY order_index ASC, created_at DESC',
         [userName]
       );
       return result.rows.map(this.mapTodo);
     }
     const result = await this.pool.query(
-      'SELECT * FROM todos WHERE completed = FALSE ORDER BY order_index ASC, created_at DESC'
+      'SELECT * FROM todos WHERE completed = FALSE AND deleted_at IS NULL ORDER BY order_index ASC, created_at DESC'
     );
     return result.rows.map(this.mapTodo);
   }
@@ -131,13 +146,13 @@ class TodoDatabase {
     if (!this.pool) return [];
     if (userName) {
       const result = await this.pool.query(
-        'SELECT * FROM todos WHERE completed = TRUE AND cleared = FALSE AND user_name = $1 ORDER BY completed_at DESC',
+        'SELECT * FROM todos WHERE completed = TRUE AND cleared = FALSE AND deleted_at IS NULL AND user_name = $1 ORDER BY completed_at DESC',
         [userName]
       );
       return result.rows.map(this.mapTodo);
     }
     const result = await this.pool.query(
-      'SELECT * FROM todos WHERE completed = TRUE AND cleared = FALSE ORDER BY completed_at DESC'
+      'SELECT * FROM todos WHERE completed = TRUE AND cleared = FALSE AND deleted_at IS NULL ORDER BY completed_at DESC'
     );
     return result.rows.map(this.mapTodo);
   }
@@ -155,7 +170,7 @@ class TodoDatabase {
 
   async getTodoById(id: number): Promise<Todo | undefined> {
     if (!this.pool) return undefined;
-    const result = await this.pool.query('SELECT * FROM todos WHERE id = $1', [id]);
+    const result = await this.pool.query('SELECT * FROM todos WHERE id = $1 AND deleted_at IS NULL', [id]);
     if (result.rows.length === 0) return undefined;
     return this.mapTodo(result.rows[0]);
   }
@@ -187,20 +202,21 @@ class TodoDatabase {
 
   async deleteTodo(id: number): Promise<void> {
     if (!this.pool) return;
-    await this.pool.query('DELETE FROM todos WHERE id = $1', [id]);
+    const now = new Date().toISOString();
+    await this.pool.query('UPDATE todos SET deleted_at = $1 WHERE id = $2', [now, id]);
   }
 
   async searchTodos(query: string, userName?: string): Promise<Todo[]> {
     if (!this.pool) return [];
     if (userName) {
       const result = await this.pool.query(
-        'SELECT * FROM todos WHERE title ILIKE $1 AND user_name = $2 ORDER BY created_at DESC',
+        'SELECT * FROM todos WHERE title ILIKE $1 AND deleted_at IS NULL AND user_name = $2 ORDER BY created_at DESC',
         [`%${query}%`, userName]
       );
       return result.rows.map(this.mapTodo);
     }
     const result = await this.pool.query(
-      'SELECT * FROM todos WHERE title ILIKE $1 ORDER BY created_at DESC',
+      'SELECT * FROM todos WHERE title ILIKE $1 AND deleted_at IS NULL ORDER BY created_at DESC',
       [`%${query}%`]
     );
     return result.rows.map(this.mapTodo);
@@ -208,7 +224,7 @@ class TodoDatabase {
 
   async clearCompletedTodos(): Promise<void> {
     if (!this.pool) return;
-    await this.pool.query('UPDATE todos SET cleared = TRUE WHERE completed = TRUE AND cleared = FALSE');
+    await this.pool.query('UPDATE todos SET cleared = TRUE WHERE completed = TRUE AND cleared = FALSE AND deleted_at IS NULL');
   }
 
   async completeAllTodos(userName?: string): Promise<void> {
@@ -217,12 +233,12 @@ class TodoDatabase {
 
     if (userName) {
       await this.pool.query(
-        'UPDATE todos SET completed = TRUE, completed_at = $1 WHERE completed = FALSE AND user_name = $2',
+        'UPDATE todos SET completed = TRUE, completed_at = $1 WHERE completed = FALSE AND deleted_at IS NULL AND user_name = $2',
         [now, userName]
       );
     } else {
       await this.pool.query(
-        'UPDATE todos SET completed = TRUE, completed_at = $1 WHERE completed = FALSE',
+        'UPDATE todos SET completed = TRUE, completed_at = $1 WHERE completed = FALSE AND deleted_at IS NULL',
         [now]
       );
     }
@@ -230,14 +246,18 @@ class TodoDatabase {
 
   async deleteAllUncompletedTodos(userName?: string): Promise<void> {
     if (!this.pool) return;
+    const now = new Date().toISOString();
 
     if (userName) {
       await this.pool.query(
-        'DELETE FROM todos WHERE completed = FALSE AND user_name = $1',
-        [userName]
+        'UPDATE todos SET deleted_at = $1 WHERE completed = FALSE AND deleted_at IS NULL AND user_name = $2',
+        [now, userName]
       );
     } else {
-      await this.pool.query('DELETE FROM todos WHERE completed = FALSE');
+      await this.pool.query(
+        'UPDATE todos SET deleted_at = $1 WHERE completed = FALSE AND deleted_at IS NULL',
+        [now]
+      );
     }
   }
 
@@ -341,6 +361,7 @@ class TodoDatabase {
       cleared: Boolean(row.cleared),
       createdAt: row.created_at,
       completedAt: row.completed_at,
+      deletedAt: row.deleted_at,
       userName: row.user_name || 'Guest',
       orderIndex: row.order_index || 0
     };
