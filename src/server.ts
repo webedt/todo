@@ -243,6 +243,24 @@ app.post('/api/todos/clear-completed', async (req: Request, res: Response) => {
     }
 });
 
+// Reorder todos
+app.post('/api/todos/reorder', async (req: Request, res: Response) => {
+    const { todoIds } = req.body;
+
+    if (!Array.isArray(todoIds) || todoIds.some(id => typeof id !== 'number')) {
+        return res.status(400).json({ error: 'Invalid todo IDs array' });
+    }
+
+    try {
+        await db.reorderTodos(todoIds);
+        broadcastUpdate('todos-reordered');
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error reordering todos:', error);
+        res.status(500).json({ error: 'Failed to reorder todos' });
+    }
+});
+
 // Get theme
 app.get('/api/theme', async (req: Request, res: Response) => {
     try {

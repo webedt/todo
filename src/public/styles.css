@@ -247,10 +247,33 @@ ul {
     border-radius: 8px;
     border: 2px solid;
     transition: opacity 0.3s, transform 0.2s;
+    cursor: move;
 }
 
 .todo-item:hover {
     transform: translateX(5px);
+}
+
+.todo-item.dragging {
+    opacity: 0.5;
+    transform: scale(1.05);
+}
+
+.drag-handle {
+    cursor: grab;
+    font-size: 1.2em;
+    opacity: 0.5;
+    user-select: none;
+    padding: 0 5px;
+    transition: opacity 0.2s;
+}
+
+.drag-handle:hover {
+    opacity: 1;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
 }
 
 .todo-item input[type="checkbox"] {
@@ -344,6 +367,10 @@ body[data-theme="dark"] .todo-text a {
     color: #81d4fa;
 }
 
+body[data-theme="dark"] .drag-handle {
+    color: #eee;
+}
+
 /* Theme: Light */
 body[data-theme="light"] {
     background-color: #f5f5f5;
@@ -392,6 +419,10 @@ body[data-theme="light"] .info-close {
 
 body[data-theme="light"] .todo-text a {
     color: #4a90e2;
+}
+
+body[data-theme="light"] .drag-handle {
+    color: #333;
 }
 
 /* Theme: Retro */
@@ -450,6 +481,10 @@ body[data-theme="retro"] .todo-text a {
     color: #00ffff;
 }
 
+body[data-theme="retro"] .drag-handle {
+    color: #00ff00;
+}
+
 /* Theme: Banana */
 body[data-theme="banana"] {
     background-color: #fff9e6;
@@ -498,6 +533,10 @@ body[data-theme="banana"] .info-close {
 
 body[data-theme="banana"] .todo-text a {
     color: #ff9500;
+}
+
+body[data-theme="banana"] .drag-handle {
+    color: #5c4d00;
 }
 
 /* Theme: Ice */
@@ -550,6 +589,10 @@ body[data-theme="ice"] .todo-text a {
     color: #0277bd;
 }
 
+body[data-theme="ice"] .drag-handle {
+    color: #01579b;
+}
+
 /* Theme: Forest */
 body[data-theme="forest"] {
     background-color: #1b2a1b;
@@ -598,6 +641,10 @@ body[data-theme="forest"] .info-close {
 
 body[data-theme="forest"] .todo-text a {
     color: #a5d6a7;
+}
+
+body[data-theme="forest"] .drag-handle {
+    color: #c8e6c9;
 }
 
 /* Age-based fading */

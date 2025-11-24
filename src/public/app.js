@@ -223,6 +223,15 @@ const API = {
             method: 'POST'
         });
         return res.json();
+    },
+
+    async reorderTodos(todoIds) {
+        const res = await fetch(getApiUrl('api/todos/reorder'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ todoIds })
+        });
+        return res.json();
     }
 };
 
@@ -283,6 +292,7 @@ function createTodoElement(todo) {
     li.className = 'todo-item';
     li.dataset.id = todo.id;
     li.dataset.createdAt = todo.createdAt;
+    li.draggable = true;
 
     if (!todo.completed) {
         const daysOld = getDaysOld(todo.createdAt);
@@ -292,6 +302,12 @@ function createTodoElement(todo) {
     if (todo.completed) {
         li.classList.add('completed');
     }
+
+    // Drag handle
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '&#9776;'; // Hamburger icon
+    dragHandle.title = 'Drag to reorder';
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -389,12 +405,80 @@ function createTodoElement(todo) {
     buttonContainer.appendChild(cancelBtn);
     buttonContainer.appendChild(deleteBtn);
 
+    li.appendChild(dragHandle);
     li.appendChild(checkbox);
     li.appendChild(text);
     li.appendChild(editInput);
     li.appendChild(buttonContainer);
 
+    // Drag events
+    li.addEventListener('dragstart', handleDragStart);
+    li.addEventListener('dragover', handleDragOver);
+    li.addEventListener('drop', handleDrop);
+    li.addEventListener('dragend', handleDragEnd);
+
     return li;
+}
+
+// Drag and drop state
+let draggedElement = null;
+
+function handleDragStart(e) {
+    draggedElement = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+
+    const afterElement = getDragAfterElement(this.parentNode, e.clientY);
+    const draggable = draggedElement;
+
+    if (afterElement == null) {
+        this.parentNode.appendChild(draggable);
+    } else {
+        this.parentNode.insertBefore(draggable, afterElement);
+    }
+
+    return false;
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    return false;
+}
+
+async function handleDragEnd(e) {
+    this.classList.remove('dragging');
+
+    // Get the new order of todos
+    const list = this.parentNode;
+    const todoIds = Array.from(list.children).map(li => parseInt(li.dataset.id));
+
+    // Save the new order to the server
+    await API.reorderTodos(todoIds);
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.todo-item:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 // Sort todos
@@ -615,6 +699,7 @@ function setupSSE() {
                 case 'todo-updated':
                 case 'todo-toggled':
                 case 'todo-deleted':
+                case 'todos-reordered':
                     // Reload todos when any change occurs
                     loadTodos();
                     break;
