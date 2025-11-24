@@ -31,27 +31,38 @@ async function startServer() {
 // API Routes
 
 // Create a new user
-app.post('/api/users', (req: Request, res: Response) => {
+app.post('/api/users', async (req: Request, res: Response) => {
     const { displayName } = req.body;
 
     if (!displayName || typeof displayName !== 'string') {
         return res.status(400).json({ error: 'Display name is required' });
     }
 
-    const user = db.createUser(displayName);
-    res.json(user);
+    try {
+        const user = await db.createUser(displayName);
+        res.json(user);
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({ error: 'Failed to create user' });
+    }
 });
 
 // Get user by ID
-app.get('/api/users/:userId', (req: Request, res: Response) => {
+app.get('/api/users/:userId', async (req: Request, res: Response) => {
     const userId = req.params.userId;
-    const user = db.getUserById(userId);
 
-    if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+    try {
+        const user = await db.getUserById(userId);
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error('Error getting user:', error);
+        res.status(500).json({ error: 'Failed to get user' });
     }
-
-    res.json(user);
 });
 
 // Server-Sent Events endpoint for real-time updates
@@ -90,36 +101,56 @@ function broadcastUpdate(type: string, data?: any) {
 
 
 // Get all todos
-app.get('/api/todos', (req: Request, res: Response) => {
+app.get('/api/todos', async (req: Request, res: Response) => {
     const userName = req.query.userName as string;
-    const todos = db.getAllTodos(userName);
-    res.json(todos);
+    try {
+        const todos = await db.getAllTodos(userName);
+        res.json(todos);
+    } catch (error) {
+        console.error('Error getting todos:', error);
+        res.status(500).json({ error: 'Failed to get todos' });
+    }
 });
 
 // Get uncompleted todos
-app.get('/api/todos/uncompleted', (req: Request, res: Response) => {
+app.get('/api/todos/uncompleted', async (req: Request, res: Response) => {
     const userName = req.query.userName as string;
-    const todos = db.getUncompletedTodos(userName);
-    res.json(todos);
+    try {
+        const todos = await db.getUncompletedTodos(userName);
+        res.json(todos);
+    } catch (error) {
+        console.error('Error getting uncompleted todos:', error);
+        res.status(500).json({ error: 'Failed to get todos' });
+    }
 });
 
 // Get completed todos
-app.get('/api/todos/completed', (req: Request, res: Response) => {
+app.get('/api/todos/completed', async (req: Request, res: Response) => {
     const userName = req.query.userName as string;
-    const todos = db.getCompletedTodos(userName);
-    res.json(todos);
+    try {
+        const todos = await db.getCompletedTodos(userName);
+        res.json(todos);
+    } catch (error) {
+        console.error('Error getting completed todos:', error);
+        res.status(500).json({ error: 'Failed to get todos' });
+    }
 });
 
 // Search todos
-app.get('/api/todos/search', (req: Request, res: Response) => {
+app.get('/api/todos/search', async (req: Request, res: Response) => {
     const query = req.query.q as string || '';
     const userName = req.query.userName as string;
-    const todos = db.searchTodos(query, userName);
-    res.json(todos);
+    try {
+        const todos = await db.searchTodos(query, userName);
+        res.json(todos);
+    } catch (error) {
+        console.error('Error searching todos:', error);
+        res.status(500).json({ error: 'Failed to search todos' });
+    }
 });
 
 // Add a new todo
-app.post('/api/todos', (req: Request, res: Response) => {
+app.post('/api/todos', async (req: Request, res: Response) => {
     const { title, userName } = req.body;
 
     if (!title || typeof title !== 'string') {
@@ -130,13 +161,18 @@ app.post('/api/todos', (req: Request, res: Response) => {
         return res.status(400).json({ error: 'User name is required' });
     }
 
-    const todo = db.addTodo(title, userName);
-    broadcastUpdate('todo-added', todo);
-    res.json(todo);
+    try {
+        const todo = await db.addTodo(title, userName);
+        broadcastUpdate('todo-added', todo);
+        res.json(todo);
+    } catch (error) {
+        console.error('Error adding todo:', error);
+        res.status(500).json({ error: 'Failed to add todo' });
+    }
 });
 
 // Update a todo's title
-app.put('/api/todos/:id', (req: Request, res: Response) => {
+app.put('/api/todos/:id', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const { title } = req.body;
 
@@ -148,53 +184,78 @@ app.put('/api/todos/:id', (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Title is required' });
     }
 
-    db.updateTodo(id, title);
-    const todo = db.getTodoById(id);
-    broadcastUpdate('todo-updated', todo);
-    res.json(todo);
+    try {
+        await db.updateTodo(id, title);
+        const todo = await db.getTodoById(id);
+        broadcastUpdate('todo-updated', todo);
+        res.json(todo);
+    } catch (error) {
+        console.error('Error updating todo:', error);
+        res.status(500).json({ error: 'Failed to update todo' });
+    }
 });
 
 // Toggle todo completion
-app.put('/api/todos/:id/toggle', (req: Request, res: Response) => {
+app.put('/api/todos/:id/toggle', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
 
     if (isNaN(id)) {
         return res.status(400).json({ error: 'Invalid ID' });
     }
 
-    db.toggleTodo(id);
-    const todo = db.getTodoById(id);
-    broadcastUpdate('todo-toggled', todo);
-    res.json(todo);
+    try {
+        await db.toggleTodo(id);
+        const todo = await db.getTodoById(id);
+        broadcastUpdate('todo-toggled', todo);
+        res.json(todo);
+    } catch (error) {
+        console.error('Error toggling todo:', error);
+        res.status(500).json({ error: 'Failed to toggle todo' });
+    }
 });
 
 // Delete a todo
-app.delete('/api/todos/:id', (req: Request, res: Response) => {
+app.delete('/api/todos/:id', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
 
     if (isNaN(id)) {
         return res.status(400).json({ error: 'Invalid ID' });
     }
 
-    db.deleteTodo(id);
-    broadcastUpdate('todo-deleted', { id });
-    res.json({ success: true });
+    try {
+        await db.deleteTodo(id);
+        broadcastUpdate('todo-deleted', { id });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting todo:', error);
+        res.status(500).json({ error: 'Failed to delete todo' });
+    }
 });
 
 // Clear all completed todos
-app.post('/api/todos/clear-completed', (req: Request, res: Response) => {
-    db.clearCompletedTodos();
-    res.json({ success: true });
+app.post('/api/todos/clear-completed', async (req: Request, res: Response) => {
+    try {
+        await db.clearCompletedTodos();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error clearing completed todos:', error);
+        res.status(500).json({ error: 'Failed to clear todos' });
+    }
 });
 
 // Get theme
-app.get('/api/theme', (req: Request, res: Response) => {
-    const theme = db.getTheme();
-    res.json({ theme });
+app.get('/api/theme', async (req: Request, res: Response) => {
+    try {
+        const theme = await db.getTheme();
+        res.json({ theme });
+    } catch (error) {
+        console.error('Error getting theme:', error);
+        res.status(500).json({ error: 'Failed to get theme' });
+    }
 });
 
 // Set theme
-app.put('/api/theme', (req: Request, res: Response) => {
+app.put('/api/theme', async (req: Request, res: Response) => {
     const { theme } = req.body;
 
     const validThemes: Theme[] = ['dark', 'light', 'retro', 'banana', 'ice', 'forest'];
@@ -203,8 +264,13 @@ app.put('/api/theme', (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Invalid theme' });
     }
 
-    db.setTheme(theme);
-    res.json({ theme });
+    try {
+        await db.setTheme(theme);
+        res.json({ theme });
+    } catch (error) {
+        console.error('Error setting theme:', error);
+        res.status(500).json({ error: 'Failed to set theme' });
+    }
 });
 
 // Serve static files (after API routes to prevent conflicts)
@@ -228,8 +294,8 @@ app.get('*', (req: Request, res: Response) => {
 
   // Start server
   app.listen(PORT, () => {
-    console.log(`🚀 Todo app running at http://localhost:${PORT}`);
-    console.log(`📝 Database initialized`);
+    console.log(`Todo app running at http://localhost:${PORT}`);
+    console.log(`Database initialized with PostgreSQL`);
   });
 }
 
@@ -240,8 +306,8 @@ startServer().catch((error) => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n👋 Shutting down gracefully...');
-  db.close();
+process.on('SIGINT', async () => {
+  console.log('\nShutting down gracefully...');
+  await db.close();
   process.exit(0);
 });
