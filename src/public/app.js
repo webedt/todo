@@ -956,6 +956,19 @@ function updateThemeEmoji(theme) {
 
 // View mode management
 function getViewMode() {
+    // Check URL parameters first
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlView = urlParams.get('view');
+
+    // Valid view modes
+    const validModes = ['minimal', 'standard', 'advanced'];
+
+    // If URL has a valid view parameter, use it
+    if (urlView && validModes.includes(urlView)) {
+        return urlView;
+    }
+
+    // Otherwise fall back to localStorage or default
     return localStorage.getItem('viewMode') || 'minimal';
 }
 
