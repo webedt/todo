@@ -238,8 +238,8 @@ function parseMarkdown(text) {
     // Extract and temporarily replace links to protect them during processing
     const links = [];
     let processed = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
-        links.push({ text: escapeHtml(linkText), url: escapeHtml(url) });
-        return `__LINK_${links.length - 1}__`;
+        links.push({ text: linkText, url: url });
+        return `<<<LINK_${links.length - 1}>>>`;
     });
 
     // Escape remaining HTML
@@ -253,10 +253,10 @@ function parseMarkdown(text) {
     processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
     processed = processed.replace(/_(.+?)_/g, '<em>$1</em>');
 
-    // Restore links
-    processed = processed.replace(/__LINK_(\d+)__/g, (match, index) => {
+    // Restore links (escaped as &lt;&lt;&lt;LINK_N&gt;&gt;&gt; after escapeHtml)
+    processed = processed.replace(/&lt;&lt;&lt;LINK_(\d+)&gt;&gt;&gt;/g, (match, index) => {
         const link = links[parseInt(index)];
-        return `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.text}</a>`;
+        return `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.text)}</a>`;
     });
 
     return processed;
