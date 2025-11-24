@@ -793,6 +793,36 @@ function updateThemeEmoji(theme) {
     document.getElementById('theme-emoji').textContent = getThemeEmoji(theme);
 }
 
+// View mode management
+function getViewMode() {
+    return localStorage.getItem('viewMode') || 'advanced';
+}
+
+function setViewMode(mode) {
+    localStorage.setItem('viewMode', mode);
+    document.body.dataset.viewMode = mode;
+    updateViewModeText(mode);
+}
+
+function updateViewModeText(mode) {
+    const viewModeText = document.getElementById('view-mode-text');
+    const modeLabels = {
+        'minimal': 'Minimal',
+        'standard': 'Standard',
+        'advanced': 'Advanced'
+    };
+    viewModeText.textContent = modeLabels[mode] || 'Advanced';
+}
+
+function cycleViewMode() {
+    const currentMode = getViewMode();
+    const modes = ['minimal', 'standard', 'advanced'];
+    const currentIndex = modes.indexOf(currentMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    const nextMode = modes[nextIndex];
+    setViewMode(nextMode);
+}
+
 // Initialize app
 async function init() {
     // Handle info notice dismissal
@@ -815,6 +845,15 @@ async function init() {
     document.body.dataset.theme = theme;
     document.getElementById('theme-select').value = theme;
     updateThemeEmoji(theme);
+
+    // Load and apply view mode
+    const viewMode = getViewMode();
+    setViewMode(viewMode);
+
+    // Set up view toggle button
+    document.getElementById('view-toggle').addEventListener('click', () => {
+        cycleViewMode();
+    });
 
     // Set up theme toggle
     const themeToggle = document.getElementById('theme-toggle');

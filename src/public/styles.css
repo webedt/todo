@@ -129,6 +129,42 @@ h1 {
     display: none;
 }
 
+.view-toggle-btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: bold;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.view-toggle-btn:hover {
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
+.view-toggle-btn:active {
+    transform: translateY(0);
+}
+
+/* View mode visibility controls */
+body[data-view-mode="minimal"] .add-todo,
+body[data-view-mode="minimal"] .filters,
+body[data-view-mode="minimal"] .uncompleted-actions,
+body[data-view-mode="minimal"] .completed-section,
+body[data-view-mode="minimal"] .switch-user-btn,
+body[data-view-mode="minimal"] .info-notice {
+    display: none !important;
+}
+
+body[data-view-mode="standard"] .filters,
+body[data-view-mode="standard"] .uncompleted-actions,
+body[data-view-mode="standard"] .switch-user-btn {
+    display: none !important;
+}
+
 .controls {
     margin-bottom: 30px;
 }
@@ -393,6 +429,11 @@ body[data-theme="dark"] .info-close {
     color: #eee;
 }
 
+body[data-theme="dark"] .view-toggle-btn {
+    background-color: #533483;
+    color: white;
+}
+
 body[data-theme="dark"] .todo-text a {
     color: #81d4fa;
 }
@@ -455,6 +496,11 @@ body[data-theme="light"] .info-notice {
 
 body[data-theme="light"] .info-close {
     color: #333;
+}
+
+body[data-theme="light"] .view-toggle-btn {
+    background-color: #95a5a6;
+    color: white;
 }
 
 body[data-theme="light"] .todo-text a {
@@ -527,6 +573,11 @@ body[data-theme="retro"] .info-close {
     color: #00ff00;
 }
 
+body[data-theme="retro"] .view-toggle-btn {
+    background-color: #ffff00;
+    color: #0f0f0f;
+}
+
 body[data-theme="retro"] .todo-text a {
     color: #00ffff;
 }
@@ -588,6 +639,11 @@ body[data-theme="banana"] .info-notice {
 }
 
 body[data-theme="banana"] .info-close {
+    color: #5c4d00;
+}
+
+body[data-theme="banana"] .view-toggle-btn {
+    background-color: #ffb733;
     color: #5c4d00;
 }
 
@@ -655,6 +711,11 @@ body[data-theme="ice"] .info-close {
     color: #01579b;
 }
 
+body[data-theme="ice"] .view-toggle-btn {
+    background-color: #4fc3f7;
+    color: #01579b;
+}
+
 body[data-theme="ice"] .todo-text a {
     color: #0277bd;
 }
@@ -717,6 +778,11 @@ body[data-theme="forest"] .info-notice {
 
 body[data-theme="forest"] .info-close {
     color: #c8e6c9;
+}
+
+body[data-theme="forest"] .view-toggle-btn {
+    background-color: #a5d6a7;
+    color: #1b2a1b;
 }
 
 body[data-theme="forest"] .todo-text a {
