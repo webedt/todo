@@ -1016,36 +1016,41 @@ function getScale() {
 }
 
 function setScale(scale) {
-    localStorage.setItem('scale', scale);
     const scaleNum = parseFloat(scale);
     const container = document.querySelector('.container');
 
     if (scaleNum === 1) {
-        // For 1x, completely remove all scaling styles to restore original state
+        // For 1x, remove from localStorage and remove all scaling styles
+        localStorage.removeItem('scale');
         document.body.style.removeProperty('transform');
         document.body.style.removeProperty('transform-origin');
         document.body.style.removeProperty('width');
         document.body.style.removeProperty('min-width');
         container.style.removeProperty('max-width');
         document.documentElement.style.removeProperty('overflow-x');
-    } else if (scaleNum < 1) {
-        // For scales smaller than 1x, inverse scale the width to maintain same width as 1x
-        document.body.style.transform = `scale(${scale})`;
-        document.body.style.transformOrigin = 'top left';
-        document.body.style.width = `${100 / scaleNum}vw`;
-        document.body.style.removeProperty('min-width');
-        // Inverse scale the container max-width to maintain visual width
-        container.style.maxWidth = `${800 / scaleNum}px`;
-        // Prevent horizontal scrolling
-        document.documentElement.style.overflowX = 'hidden';
     } else {
-        // For scales larger than 1x, use natural width with minimum of screen width
-        document.body.style.transform = `scale(${scale})`;
-        document.body.style.transformOrigin = 'top left';
-        document.body.style.removeProperty('width');
-        document.body.style.minWidth = '100vw';
-        container.style.maxWidth = '800px';
-        document.documentElement.style.overflowX = 'auto';
+        // Save non-1x scales to localStorage
+        localStorage.setItem('scale', scale);
+
+        if (scaleNum < 1) {
+            // For scales smaller than 1x, inverse scale the width to maintain same width as 1x
+            document.body.style.transform = `scale(${scale})`;
+            document.body.style.transformOrigin = 'top left';
+            document.body.style.width = `${100 / scaleNum}vw`;
+            document.body.style.removeProperty('min-width');
+            // Inverse scale the container max-width to maintain visual width
+            container.style.maxWidth = `${800 / scaleNum}px`;
+            // Prevent horizontal scrolling
+            document.documentElement.style.overflowX = 'hidden';
+        } else {
+            // For scales larger than 1x, use natural width with minimum of screen width
+            document.body.style.transform = `scale(${scale})`;
+            document.body.style.transformOrigin = 'top left';
+            document.body.style.removeProperty('width');
+            document.body.style.minWidth = '100vw';
+            container.style.maxWidth = '800px';
+            document.documentElement.style.overflowX = 'auto';
+        }
     }
 
     updateScaleText(scale);
@@ -1101,6 +1106,14 @@ async function init() {
     if (scale !== '1') {
         setScale(scale);
     } else {
+        // Even at 1x, ensure all scale properties are cleared
+        const container = document.querySelector('.container');
+        document.body.style.removeProperty('transform');
+        document.body.style.removeProperty('transform-origin');
+        document.body.style.removeProperty('width');
+        document.body.style.removeProperty('min-width');
+        container.style.removeProperty('max-width');
+        document.documentElement.style.removeProperty('overflow-x');
         updateScaleText(scale);
     }
 
