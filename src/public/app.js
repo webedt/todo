@@ -428,8 +428,6 @@ function createTodoElement(todo) {
 
     // Drag events - only on the drag handle
     dragHandle.addEventListener('dragstart', handleDragStart);
-    li.addEventListener('dragover', handleDragOver);
-    li.addEventListener('drop', handleDrop);
     dragHandle.addEventListener('dragend', handleDragEnd);
 
     return li;
@@ -444,45 +442,38 @@ function handleDragStart(e) {
     draggedElement = todoItem;
     todoItem.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', todoItem.innerHTML);
-}
-
-function handleDragOver(e) {
-    if (e.preventDefault) {
-        e.preventDefault();
-    }
-    e.dataTransfer.dropEffect = 'move';
-
-    const afterElement = getDragAfterElement(this.parentNode, e.clientY);
-    const draggable = draggedElement;
-
-    if (afterElement == null) {
-        this.parentNode.appendChild(draggable);
-    } else {
-        this.parentNode.insertBefore(draggable, afterElement);
-    }
-
-    return false;
-}
-
-function handleDrop(e) {
-    if (e.stopPropagation) {
-        e.stopPropagation();
-    }
-    return false;
+    e.dataTransfer.setData('text/plain', todoItem.dataset.id);
 }
 
 async function handleDragEnd(e) {
     // 'this' is the drag handle, we need to get the parent li
     const todoItem = this.closest('.todo-item');
+    if (!todoItem) return;
+
     todoItem.classList.remove('dragging');
 
     // Get the new order of todos
     const list = todoItem.parentNode;
-    const todoIds = Array.from(list.children).map(li => parseInt(li.dataset.id));
+    if (!list) return;
 
-    // Save the new order to the server
-    await API.reorderTodos(todoIds);
+    const todoIds = Array.from(list.children)
+        .filter(li => li.classList.contains('todo-item'))
+        .map(li => parseInt(li.dataset.id))
+        .filter(id => !isNaN(id));
+
+    // Only save if we have valid IDs
+    if (todoIds.length > 0) {
+        try {
+            await API.reorderTodos(todoIds);
+            console.log('Reordered todos:', todoIds);
+        } catch (error) {
+            console.error('Failed to reorder todos:', error);
+            // Reload todos to restore order
+            await loadTodos();
+        }
+    }
+
+    draggedElement = null;
 }
 
 function getDragAfterElement(container, y) {
@@ -498,6 +489,25 @@ function getDragAfterElement(container, y) {
             return closest;
         }
     }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// Setup drag handlers on the list container
+function setupListDragHandlers(listElement) {
+    listElement.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggedElement) return;
+
+        const afterElement = getDragAfterElement(listElement, e.clientY);
+        if (afterElement == null) {
+            listElement.appendChild(draggedElement);
+        } else {
+            listElement.insertBefore(draggedElement, afterElement);
+        }
+    });
+
+    listElement.addEventListener('drop', (e) => {
+        e.preventDefault();
+    });
 }
 
 // Sort todos
@@ -543,11 +553,15 @@ async function loadTodos() {
     const uncompletedList = document.getElementById('uncompleted-list');
     uncompletedList.innerHTML = '';
 
+    // Add drag and drop handlers to the list
+    setupListDragHandlers(uncompletedList);
+
     if (uncompletedTodos.length === 0) {
         const emptyMsg = document.createElement('li');
         emptyMsg.textContent = searchQuery ? 'No matching uncompleted todos' : 'No uncompleted todos! 🎉';
         emptyMsg.style.opacity = '0.6';
         emptyMsg.style.padding = '20px';
+        emptyMsg.style.listStyle = 'none';
         uncompletedList.appendChild(emptyMsg);
     } else {
         uncompletedTodos.forEach(todo => {
