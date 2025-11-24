@@ -279,6 +279,10 @@ function parseMarkdown(text) {
     // Restore links (escaped as &lt;&lt;&lt;LINK_N&gt;&gt;&gt; after escapeHtml)
     processed = processed.replace(/&lt;&lt;&lt;LINK_(\d+)&gt;&gt;&gt;/g, (match, index) => {
         const link = links[parseInt(index)];
+        // If link doesn't exist at this index, return the original match
+        if (!link) {
+            return match;
+        }
         return `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.text)}</a>`;
     });
 
@@ -334,6 +338,11 @@ function createTodoElement(todo) {
 
     const text = document.createElement('span');
     text.className = 'todo-text';
+    // Debug: log the original title and parsed result
+    if (todo.title.includes('LINK')) {
+        console.log('Original title:', todo.title);
+        console.log('Parsed result:', parseMarkdown(todo.title));
+    }
     text.innerHTML = parseMarkdown(todo.title);
 
     const editInput = document.createElement('input');
