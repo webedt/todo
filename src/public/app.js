@@ -1017,8 +1017,25 @@ function getScale() {
 
 function setScale(scale) {
     localStorage.setItem('scale', scale);
+    const scaleNum = parseFloat(scale);
+
     document.body.style.transform = `scale(${scale})`;
     document.body.style.transformOrigin = 'top center';
+
+    if (scaleNum < 1) {
+        // For scales smaller than 1x, inverse scale the width to maintain same width as 1x
+        document.body.style.width = `${100 / scaleNum}%`;
+        document.body.style.minWidth = '';
+    } else if (scaleNum > 1) {
+        // For scales larger than 1x, use natural width with minimum of screen width
+        document.body.style.width = '';
+        document.body.style.minWidth = '100vw';
+    } else {
+        // For 1x, reset to defaults
+        document.body.style.width = '';
+        document.body.style.minWidth = '';
+    }
+
     updateScaleText(scale);
 }
 
