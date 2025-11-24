@@ -1004,7 +1004,7 @@ function getScale() {
     const urlScale = urlParams.get('scale');
 
     // Valid scale values
-    const validScales = ['0.25', '0.5', '1', '1.5', '2'];
+    const validScales = ['0.5', '1', '1.5'];
 
     // If URL has a valid scale parameter, use it
     if (urlScale && validScales.includes(urlScale)) {
@@ -1020,27 +1020,30 @@ function setScale(scale) {
     const scaleNum = parseFloat(scale);
     const container = document.querySelector('.container');
 
-    document.body.style.transform = `scale(${scale})`;
-    document.body.style.transformOrigin = 'top left';
-
-    if (scaleNum < 1) {
+    if (scaleNum === 1) {
+        // For 1x, completely reset all scaling
+        document.body.style.transform = '';
+        document.body.style.transformOrigin = '';
+        document.body.style.width = '';
+        document.body.style.minWidth = '';
+        container.style.maxWidth = '';
+        document.documentElement.style.overflowX = '';
+    } else if (scaleNum < 1) {
         // For scales smaller than 1x, inverse scale the width to maintain same width as 1x
+        document.body.style.transform = `scale(${scale})`;
+        document.body.style.transformOrigin = 'top left';
         document.body.style.width = `${100 / scaleNum}vw`;
         document.body.style.minWidth = '';
         // Inverse scale the container max-width to maintain visual width
         container.style.maxWidth = `${800 / scaleNum}px`;
         // Prevent horizontal scrolling
         document.documentElement.style.overflowX = 'hidden';
-    } else if (scaleNum > 1) {
+    } else {
         // For scales larger than 1x, use natural width with minimum of screen width
+        document.body.style.transform = `scale(${scale})`;
+        document.body.style.transformOrigin = 'top left';
         document.body.style.width = '';
         document.body.style.minWidth = '100vw';
-        container.style.maxWidth = '800px';
-        document.documentElement.style.overflowX = 'auto';
-    } else {
-        // For 1x, reset to defaults
-        document.body.style.width = '';
-        document.body.style.minWidth = '';
         container.style.maxWidth = '800px';
         document.documentElement.style.overflowX = 'auto';
     }
@@ -1054,7 +1057,7 @@ function updateScaleText(scale) {
 
 function cycleScale() {
     const currentScale = getScale();
-    const scales = ['0.25', '0.5', '1', '1.5', '2'];
+    const scales = ['0.5', '1', '1.5'];
     const currentIndex = scales.indexOf(currentScale);
     const nextIndex = (currentIndex + 1) % scales.length;
     const nextScale = scales[nextIndex];
