@@ -21,9 +21,6 @@
     <div class="container">
         <header>
             <div class="header-left">
-                <h1 id="app-title">📝 Todo App</h1>
-            </div>
-            <div class="header-center">
                 <button id="view-toggle" class="view-toggle-btn" title="View Mode">
                     <span id="view-mode-text">Advanced</span>
                 </button>
@@ -42,9 +39,14 @@
                         <option value="forest">🌲 Forest</option>
                     </select>
                 </div>
-                <button id="switch-user" class="switch-user-btn" title="Logoff">
-                    👤 Logoff
-                </button>
+                <div class="profile-dropdown">
+                    <button id="profile-toggle" class="profile-toggle" title="Profile">
+                        <span id="profile-name"></span>
+                    </button>
+                    <div id="profile-menu" class="profile-menu">
+                        <button id="profile-logoff" class="profile-menu-item">Logoff</button>
+                    </div>
+                </div>
             </div>
         </header>
 

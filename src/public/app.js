@@ -142,12 +142,12 @@ function clearCurrentUser() {
     window.history.pushState({}, '', basePath);
 }
 
-function updateTitle() {
-    const title = document.getElementById('app-title');
+function updateProfileName() {
+    const profileName = document.getElementById('profile-name');
     if (currentUserDisplayName) {
-        title.textContent = `📝 ${currentUserDisplayName}'s Todos`;
+        profileName.textContent = currentUserDisplayName;
     } else {
-        title.textContent = '📝 Todo App';
+        profileName.textContent = 'Guest';
     }
 }
 
@@ -608,7 +608,7 @@ let currentSSE = null;
 
 // Setup app functionality after user login
 async function setupAppAfterLogin() {
-    updateTitle();
+    updateProfileName();
 
     // Load todos
     await loadTodos();
@@ -855,6 +855,29 @@ async function init() {
         cycleViewMode();
     });
 
+    // Set up profile dropdown
+    const profileToggle = document.getElementById('profile-toggle');
+    const profileMenu = document.getElementById('profile-menu');
+    const profileLogoff = document.getElementById('profile-logoff');
+
+    profileToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileMenu.classList.toggle('show');
+    });
+
+    profileLogoff.addEventListener('click', () => {
+        clearCurrentUser();
+        showNameModal();
+        profileMenu.classList.remove('show');
+    });
+
+    // Close profile menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!profileToggle.contains(e.target) && !profileMenu.contains(e.target)) {
+            profileMenu.classList.remove('show');
+        }
+    });
+
     // Set up theme toggle
     const themeToggle = document.getElementById('theme-toggle');
     const themeSelector = document.querySelector('.theme-selector');
@@ -888,12 +911,6 @@ async function init() {
         if (e.key === 'Enter') {
             handleNameSubmit();
         }
-    });
-
-    // Switch user button
-    document.getElementById('switch-user').addEventListener('click', () => {
-        clearCurrentUser();
-        showNameModal();
     });
 
     // Handle URL path changes (when user navigates back/forward)
