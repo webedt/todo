@@ -169,6 +169,26 @@ h1 {
     transform: translateY(0);
 }
 
+.scale-toggle-btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: bold;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.scale-toggle-btn:hover {
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
+.scale-toggle-btn:active {
+    transform: translateY(0);
+}
+
 /* Profile dropdown */
 .profile-dropdown {
     position: relative;
@@ -536,7 +556,8 @@ body[data-theme="dark"] .info-close {
     color: #eee;
 }
 
-body[data-theme="dark"] .view-toggle-btn {
+body[data-theme="dark"] .view-toggle-btn,
+body[data-theme="dark"] .scale-toggle-btn {
     background-color: #533483;
     color: white;
 }
@@ -619,7 +640,8 @@ body[data-theme="light"] .info-close {
     color: #333;
 }
 
-body[data-theme="light"] .view-toggle-btn {
+body[data-theme="light"] .view-toggle-btn,
+body[data-theme="light"] .scale-toggle-btn {
     background-color: #95a5a6;
     color: white;
 }
@@ -708,7 +730,8 @@ body[data-theme="retro"] .info-close {
     color: #00ff00;
 }
 
-body[data-theme="retro"] .view-toggle-btn {
+body[data-theme="retro"] .view-toggle-btn,
+body[data-theme="retro"] .scale-toggle-btn {
     background-color: #ffff00;
     color: #0f0f0f;
 }
@@ -791,7 +814,8 @@ body[data-theme="banana"] .info-close {
     color: #5c4d00;
 }
 
-body[data-theme="banana"] .view-toggle-btn {
+body[data-theme="banana"] .view-toggle-btn,
+body[data-theme="banana"] .scale-toggle-btn {
     background-color: #ffb733;
     color: #5c4d00;
 }
@@ -874,7 +898,8 @@ body[data-theme="ice"] .info-close {
     color: #01579b;
 }
 
-body[data-theme="ice"] .view-toggle-btn {
+body[data-theme="ice"] .view-toggle-btn,
+body[data-theme="ice"] .scale-toggle-btn {
     background-color: #4fc3f7;
     color: #01579b;
 }
@@ -957,7 +982,8 @@ body[data-theme="forest"] .info-close {
     color: #c8e6c9;
 }
 
-body[data-theme="forest"] .view-toggle-btn {
+body[data-theme="forest"] .view-toggle-btn,
+body[data-theme="forest"] .scale-toggle-btn {
     background-color: #a5d6a7;
     color: #1b2a1b;
 }

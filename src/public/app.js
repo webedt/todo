@@ -997,6 +997,44 @@ function cycleViewMode() {
     setViewMode(nextMode);
 }
 
+// Scale management
+function getScale() {
+    // Check URL parameters first
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlScale = urlParams.get('scale');
+
+    // Valid scale values
+    const validScales = ['0.25', '0.5', '1', '1.5', '2'];
+
+    // If URL has a valid scale parameter, use it
+    if (urlScale && validScales.includes(urlScale)) {
+        return urlScale;
+    }
+
+    // Otherwise fall back to localStorage or default
+    return localStorage.getItem('scale') || '1';
+}
+
+function setScale(scale) {
+    localStorage.setItem('scale', scale);
+    document.body.style.transform = `scale(${scale})`;
+    document.body.style.transformOrigin = 'top center';
+    updateScaleText(scale);
+}
+
+function updateScaleText(scale) {
+    document.getElementById('scale-text').textContent = `${scale}x`;
+}
+
+function cycleScale() {
+    const currentScale = getScale();
+    const scales = ['0.25', '0.5', '1', '1.5', '2'];
+    const currentIndex = scales.indexOf(currentScale);
+    const nextIndex = (currentIndex + 1) % scales.length;
+    const nextScale = scales[nextIndex];
+    setScale(nextScale);
+}
+
 // Initialize app
 async function init() {
     // Handle info notice dismissal
@@ -1027,6 +1065,15 @@ async function init() {
     // Set up view toggle button
     document.getElementById('view-toggle').addEventListener('click', () => {
         cycleViewMode();
+    });
+
+    // Load and apply scale
+    const scale = getScale();
+    setScale(scale);
+
+    // Set up scale toggle button
+    document.getElementById('scale-toggle').addEventListener('click', () => {
+        cycleScale();
     });
 
     // Set up profile dropdown
