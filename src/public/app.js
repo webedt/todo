@@ -226,6 +226,42 @@ const API = {
     }
 };
 
+// Parse markdown to HTML
+function parseMarkdown(text) {
+    // Escape HTML to prevent XSS
+    const escapeHtml = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    };
+
+    // Extract and temporarily replace links to protect them during processing
+    const links = [];
+    let processed = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
+        links.push({ text: escapeHtml(linkText), url: escapeHtml(url) });
+        return `__LINK_${links.length - 1}__`;
+    });
+
+    // Escape remaining HTML
+    processed = escapeHtml(processed);
+
+    // Process bold (**text** or __text__)
+    processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    processed = processed.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+    // Process italic (*text* or _text_)
+    processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    processed = processed.replace(/_(.+?)_/g, '<em>$1</em>');
+
+    // Restore links
+    processed = processed.replace(/__LINK_(\d+)__/g, (match, index) => {
+        const link = links[parseInt(index)];
+        return `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.text}</a>`;
+    });
+
+    return processed;
+}
+
 // Calculate days since creation
 function getDaysOld(createdAt) {
     const created = new Date(createdAt);
@@ -267,7 +303,7 @@ function createTodoElement(todo) {
 
     const text = document.createElement('span');
     text.className = 'todo-text';
-    text.textContent = todo.title;
+    text.innerHTML = parseMarkdown(todo.title);
 
     const editInput = document.createElement('input');
     editInput.type = 'text';

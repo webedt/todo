@@ -340,6 +340,10 @@ body[data-theme="dark"] .info-close {
     color: #eee;
 }
 
+body[data-theme="dark"] .todo-text a {
+    color: #81d4fa;
+}
+
 /* Theme: Light */
 body[data-theme="light"] {
     background-color: #f5f5f5;
@@ -384,6 +388,10 @@ body[data-theme="light"] .info-notice {
 
 body[data-theme="light"] .info-close {
     color: #333;
+}
+
+body[data-theme="light"] .todo-text a {
+    color: #4a90e2;
 }
 
 /* Theme: Retro */
@@ -438,6 +446,10 @@ body[data-theme="retro"] .info-close {
     color: #00ff00;
 }
 
+body[data-theme="retro"] .todo-text a {
+    color: #00ffff;
+}
+
 /* Theme: Banana */
 body[data-theme="banana"] {
     background-color: #fff9e6;
@@ -482,6 +494,10 @@ body[data-theme="banana"] .info-notice {
 
 body[data-theme="banana"] .info-close {
     color: #5c4d00;
+}
+
+body[data-theme="banana"] .todo-text a {
+    color: #ff9500;
 }
 
 /* Theme: Ice */
@@ -530,6 +546,10 @@ body[data-theme="ice"] .info-close {
     color: #01579b;
 }
 
+body[data-theme="ice"] .todo-text a {
+    color: #0277bd;
+}
+
 /* Theme: Forest */
 body[data-theme="forest"] {
     background-color: #1b2a1b;
@@ -576,18 +596,40 @@ body[data-theme="forest"] .info-close {
     color: #c8e6c9;
 }
 
+body[data-theme="forest"] .todo-text a {
+    color: #a5d6a7;
+}
+
 /* Age-based fading */
-.todo-item[data-age="0"] { font-weight: bold; opacity: 1; }
-.todo-item[data-age="1"] { font-weight: 600; opacity: 0.95; }
-.todo-item[data-age="2"] { font-weight: 600; opacity: 0.9; }
-.todo-item[data-age="3"] { font-weight: 500; opacity: 0.85; }
-.todo-item[data-age="4"] { font-weight: 500; opacity: 0.8; }
-.todo-item[data-age="5"] { font-weight: 400; opacity: 0.75; }
-.todo-item[data-age="6"] { font-weight: 400; opacity: 0.7; }
-.todo-item[data-age="7"] { font-weight: 300; opacity: 0.65; }
-.todo-item[data-age="8"] { font-weight: 300; opacity: 0.6; }
-.todo-item[data-age="9"] { font-weight: 300; opacity: 0.55; }
-.todo-item[data-age="10-plus"] { font-weight: 200; opacity: 0.5; }
+.todo-item[data-age="0"] { opacity: 1; }
+.todo-item[data-age="1"] { opacity: 0.95; }
+.todo-item[data-age="2"] { opacity: 0.9; }
+.todo-item[data-age="3"] { opacity: 0.85; }
+.todo-item[data-age="4"] { opacity: 0.8; }
+.todo-item[data-age="5"] { opacity: 0.75; }
+.todo-item[data-age="6"] { opacity: 0.7; }
+.todo-item[data-age="7"] { opacity: 0.65; }
+.todo-item[data-age="8"] { opacity: 0.6; }
+.todo-item[data-age="9"] { opacity: 0.55; }
+.todo-item[data-age="10-plus"] { opacity: 0.5; }
+
+/* Markdown styling in todo text */
+.todo-text a {
+    text-decoration: underline;
+    transition: opacity 0.2s;
+}
+
+.todo-text a:hover {
+    opacity: 0.8;
+}
+
+.todo-text strong {
+    font-weight: bold;
+}
+
+.todo-text em {
+    font-style: italic;
+}
 
 #completed-count {
     font-size: 0.8em;
