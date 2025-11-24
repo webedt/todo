@@ -432,11 +432,20 @@ function createTodoElement(todo) {
     dragHandle.addEventListener('dragstart', handleDragStart);
     dragHandle.addEventListener('dragend', handleDragEnd);
 
+    // Touch events for mobile support
+    dragHandle.addEventListener('touchstart', handleTouchStart, { passive: false });
+    dragHandle.addEventListener('touchmove', handleTouchMove, { passive: false });
+    dragHandle.addEventListener('touchend', handleTouchEnd);
+
     return li;
 }
 
 // Drag and drop state
 let draggedElement = null;
+let touchStartY = 0;
+let touchStartX = 0;
+let touchElement = null;
+let touchPlaceholder = null;
 
 function handleDragStart(e) {
     // 'this' is the drag handle, we need to get the parent li
@@ -491,6 +500,102 @@ function getDragAfterElement(container, y) {
             return closest;
         }
     }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// Touch event handlers for mobile support
+function handleTouchStart(e) {
+    const todoItem = this.closest('.todo-item');
+    const touch = e.touches[0];
+
+    touchStartY = touch.clientY;
+    touchStartX = touch.clientX;
+    touchElement = todoItem;
+
+    // Add a small delay to distinguish between tap and drag
+    setTimeout(() => {
+        if (touchElement) {
+            touchElement.classList.add('dragging');
+
+            // Create a placeholder
+            touchPlaceholder = document.createElement('li');
+            touchPlaceholder.className = 'todo-item touch-placeholder';
+            touchPlaceholder.style.height = touchElement.offsetHeight + 'px';
+            touchElement.parentNode.insertBefore(touchPlaceholder, touchElement);
+
+            // Make the element fixed position for smooth dragging
+            touchElement.style.position = 'fixed';
+            touchElement.style.zIndex = '1000';
+            touchElement.style.width = touchElement.offsetWidth + 'px';
+            touchElement.style.left = touchElement.getBoundingClientRect().left + 'px';
+            touchElement.style.top = touch.clientY - 30 + 'px';
+            touchElement.style.pointerEvents = 'none';
+        }
+    }, 100);
+}
+
+function handleTouchMove(e) {
+    if (!touchElement || !touchElement.classList.contains('dragging')) return;
+
+    e.preventDefault();
+    const touch = e.touches[0];
+
+    // Move the element with the touch
+    touchElement.style.top = touch.clientY - 30 + 'px';
+
+    // Find the element we're hovering over
+    const list = touchPlaceholder.parentNode;
+    const afterElement = getDragAfterElement(list, touch.clientY);
+
+    if (afterElement == null) {
+        list.appendChild(touchPlaceholder);
+    } else {
+        list.insertBefore(touchPlaceholder, afterElement);
+    }
+}
+
+async function handleTouchEnd(e) {
+    if (!touchElement) return;
+
+    // If dragging was initiated
+    if (touchElement.classList.contains('dragging')) {
+        touchElement.classList.remove('dragging');
+
+        // Reset element styles
+        touchElement.style.position = '';
+        touchElement.style.zIndex = '';
+        touchElement.style.width = '';
+        touchElement.style.left = '';
+        touchElement.style.top = '';
+        touchElement.style.pointerEvents = '';
+
+        // Replace placeholder with the actual element
+        if (touchPlaceholder && touchPlaceholder.parentNode) {
+            touchPlaceholder.parentNode.insertBefore(touchElement, touchPlaceholder);
+            touchPlaceholder.remove();
+        }
+
+        // Save the new order
+        const list = touchElement.parentNode;
+        const todoIds = Array.from(list.children)
+            .filter(li => li.classList.contains('todo-item'))
+            .map(li => parseInt(li.dataset.id))
+            .filter(id => !isNaN(id));
+
+        if (todoIds.length > 0) {
+            try {
+                await API.reorderTodos(todoIds);
+                console.log('Reordered todos:', todoIds);
+            } catch (error) {
+                console.error('Failed to reorder todos:', error);
+                await loadTodos();
+            }
+        }
+    }
+
+    touchElement = null;
+    touchPlaceholder = null;
+    touchStartY = 0;
+    touchStartX = 0;
 }
 
 // Setup drag handlers on the list container

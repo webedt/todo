@@ -413,6 +413,12 @@ ul {
     transform: scale(1.05);
 }
 
+.touch-placeholder {
+    opacity: 0.3;
+    border-style: dashed !important;
+    background: transparent !important;
+}
+
 .drag-handle {
     cursor: grab;
     font-size: 1.2em;
