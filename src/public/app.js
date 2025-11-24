@@ -1020,20 +1020,24 @@ function setScale(scale) {
     const scaleNum = parseFloat(scale);
 
     document.body.style.transform = `scale(${scale})`;
-    document.body.style.transformOrigin = 'top center';
+    document.body.style.transformOrigin = 'top left';
 
     if (scaleNum < 1) {
         // For scales smaller than 1x, inverse scale the width to maintain same width as 1x
-        document.body.style.width = `${100 / scaleNum}%`;
+        document.body.style.width = `${100 / scaleNum}vw`;
         document.body.style.minWidth = '';
+        // Prevent horizontal scrolling
+        document.documentElement.style.overflowX = 'hidden';
     } else if (scaleNum > 1) {
         // For scales larger than 1x, use natural width with minimum of screen width
         document.body.style.width = '';
         document.body.style.minWidth = '100vw';
+        document.documentElement.style.overflowX = 'auto';
     } else {
         // For 1x, reset to defaults
         document.body.style.width = '';
         document.body.style.minWidth = '';
+        document.documentElement.style.overflowX = 'auto';
     }
 
     updateScaleText(scale);
