@@ -1021,19 +1021,19 @@ function setScale(scale) {
     const container = document.querySelector('.container');
 
     if (scaleNum === 1) {
-        // For 1x, completely reset all scaling
-        document.body.style.transform = '';
-        document.body.style.transformOrigin = '';
-        document.body.style.width = '';
-        document.body.style.minWidth = '';
-        container.style.maxWidth = '';
-        document.documentElement.style.overflowX = '';
+        // For 1x, completely remove all scaling styles to restore original state
+        document.body.style.removeProperty('transform');
+        document.body.style.removeProperty('transform-origin');
+        document.body.style.removeProperty('width');
+        document.body.style.removeProperty('min-width');
+        container.style.removeProperty('max-width');
+        document.documentElement.style.removeProperty('overflow-x');
     } else if (scaleNum < 1) {
         // For scales smaller than 1x, inverse scale the width to maintain same width as 1x
         document.body.style.transform = `scale(${scale})`;
         document.body.style.transformOrigin = 'top left';
         document.body.style.width = `${100 / scaleNum}vw`;
-        document.body.style.minWidth = '';
+        document.body.style.removeProperty('min-width');
         // Inverse scale the container max-width to maintain visual width
         container.style.maxWidth = `${800 / scaleNum}px`;
         // Prevent horizontal scrolling
@@ -1042,7 +1042,7 @@ function setScale(scale) {
         // For scales larger than 1x, use natural width with minimum of screen width
         document.body.style.transform = `scale(${scale})`;
         document.body.style.transformOrigin = 'top left';
-        document.body.style.width = '';
+        document.body.style.removeProperty('width');
         document.body.style.minWidth = '100vw';
         container.style.maxWidth = '800px';
         document.documentElement.style.overflowX = 'auto';
@@ -1098,7 +1098,11 @@ async function init() {
 
     // Load and apply scale
     const scale = getScale();
-    setScale(scale);
+    if (scale !== '1') {
+        setScale(scale);
+    } else {
+        updateScaleText(scale);
+    }
 
     // Set up scale toggle button
     document.getElementById('scale-toggle').addEventListener('click', () => {
