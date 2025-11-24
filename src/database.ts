@@ -311,12 +311,25 @@ class TodoDatabase {
   async reorderTodos(todoIds: number[]): Promise<void> {
     if (!this.pool) return;
 
-    // Update order_index for each todo based on its position in the array
-    for (let i = 0; i < todoIds.length; i++) {
-      await this.pool.query(
-        'UPDATE todos SET order_index = $1 WHERE id = $2',
-        [i, todoIds[i]]
-      );
+    // Use a transaction to ensure all updates complete atomically
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Update order_index for each todo based on its position in the array
+      for (let i = 0; i < todoIds.length; i++) {
+        await client.query(
+          'UPDATE todos SET order_index = $1 WHERE id = $2',
+          [i, todoIds[i]]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
   }
 

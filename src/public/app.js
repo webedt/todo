@@ -346,8 +346,9 @@ function createTodoElement(todo) {
     buttonContainer.className = 'button-container';
 
     const editBtn = document.createElement('button');
-    editBtn.textContent = 'Edit';
+    editBtn.innerHTML = '&#9998;'; // Pencil icon
     editBtn.className = 'edit-btn';
+    editBtn.title = 'Edit';
     editBtn.addEventListener('click', () => {
         text.style.display = 'none';
         editInput.style.display = 'block';
@@ -394,8 +395,9 @@ function createTodoElement(todo) {
     });
 
     const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
+    deleteBtn.innerHTML = '&#128465;'; // Trash can icon
     deleteBtn.className = 'delete-btn';
+    deleteBtn.title = 'Delete';
     deleteBtn.addEventListener('click', async () => {
         await API.deleteTodo(todo.id);
         await loadTodos();
@@ -754,11 +756,18 @@ function setupSSE() {
                 case 'connected':
                     console.log('✓ SSE connection established');
                     break;
+                case 'todos-reordered':
+                    // Wait a couple frames for the database transaction to fully commit
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            loadTodos();
+                        });
+                    });
+                    break;
                 case 'todo-added':
                 case 'todo-updated':
                 case 'todo-toggled':
                 case 'todo-deleted':
-                case 'todos-reordered':
                 case 'todos-completed-all':
                 case 'todos-deleted-all-uncompleted':
                     // Reload todos when any change occurs
