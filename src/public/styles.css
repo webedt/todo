@@ -34,6 +34,11 @@ header {
     align-items: center;
     gap: 8px;
     line-height: 1.4;
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.info-notice.hidden {
+    display: none;
 }
 
 .info-icon {
@@ -43,6 +48,27 @@ header {
 
 .info-text {
     flex: 1;
+}
+
+.info-close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.5;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+}
+
+.info-close:hover {
+    opacity: 1;
 }
 
 .header-controls {
@@ -310,6 +336,10 @@ body[data-theme="dark"] .info-notice {
     border: 1px solid rgba(15, 52, 96, 0.5);
 }
 
+body[data-theme="dark"] .info-close {
+    color: #eee;
+}
+
 /* Theme: Light */
 body[data-theme="light"] {
     background-color: #f5f5f5;
@@ -350,6 +380,10 @@ body[data-theme="light"] .clear-completed-btn {
 body[data-theme="light"] .info-notice {
     background-color: rgba(74, 144, 226, 0.1);
     border: 1px solid rgba(74, 144, 226, 0.2);
+}
+
+body[data-theme="light"] .info-close {
+    color: #333;
 }
 
 /* Theme: Retro */
@@ -400,6 +434,10 @@ body[data-theme="retro"] .info-notice {
     border: 1px solid rgba(0, 255, 0, 0.3);
 }
 
+body[data-theme="retro"] .info-close {
+    color: #00ff00;
+}
+
 /* Theme: Banana */
 body[data-theme="banana"] {
     background-color: #fff9e6;
@@ -440,6 +478,10 @@ body[data-theme="banana"] .clear-completed-btn {
 body[data-theme="banana"] .info-notice {
     background-color: rgba(255, 224, 102, 0.3);
     border: 1px solid rgba(255, 224, 102, 0.5);
+}
+
+body[data-theme="banana"] .info-close {
+    color: #5c4d00;
 }
 
 /* Theme: Ice */
@@ -484,6 +526,10 @@ body[data-theme="ice"] .info-notice {
     border: 1px solid rgba(129, 212, 250, 0.4);
 }
 
+body[data-theme="ice"] .info-close {
+    color: #01579b;
+}
+
 /* Theme: Forest */
 body[data-theme="forest"] {
     background-color: #1b2a1b;
@@ -524,6 +570,10 @@ body[data-theme="forest"] .clear-completed-btn {
 body[data-theme="forest"] .info-notice {
     background-color: rgba(76, 175, 80, 0.2);
     border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+body[data-theme="forest"] .info-close {
+    color: #c8e6c9;
 }
 
 /* Age-based fading */

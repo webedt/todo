@@ -632,6 +632,21 @@ function updateThemeEmoji(theme) {
 
 // Initialize app
 async function init() {
+    // Handle info notice dismissal
+    const infoNotice = document.getElementById('info-notice');
+    const infoCloseBtn = document.getElementById('info-close');
+
+    // Check if notice was previously dismissed
+    if (localStorage.getItem('infoNoticeDismissed') === 'true') {
+        infoNotice.classList.add('hidden');
+    }
+
+    // Handle dismiss button click
+    infoCloseBtn.addEventListener('click', () => {
+        infoNotice.classList.add('hidden');
+        localStorage.setItem('infoNoticeDismissed', 'true');
+    });
+
     // Load theme
     const { theme } = await API.getTheme();
     document.body.dataset.theme = theme;
