@@ -479,6 +479,8 @@ async function handleDragEnd(e) {
             isLocalReordering = true;
             await API.reorderTodos(todoIds);
             console.log('Reordered todos:', todoIds);
+            // Switch to custom order mode to preserve the drag order
+            document.getElementById('sort-select').value = 'custom';
             // Clear the flag after a delay to allow SSE message to arrive and be ignored
             setTimeout(() => {
                 isLocalReordering = false;
@@ -593,6 +595,8 @@ async function handleTouchEnd(e) {
                 isLocalReordering = true;
                 await API.reorderTodos(todoIds);
                 console.log('Reordered todos:', todoIds);
+                // Switch to custom order mode to preserve the drag order
+                document.getElementById('sort-select').value = 'custom';
                 // Clear the flag after a delay to allow SSE message to arrive and be ignored
                 setTimeout(() => {
                     isLocalReordering = false;
@@ -635,6 +639,10 @@ function sortTodos(todos, sortBy) {
     const sorted = [...todos];
 
     switch(sortBy) {
+        case 'custom':
+            // Sort by order_index (custom drag-and-drop order)
+            sorted.sort((a, b) => a.orderIndex - b.orderIndex);
+            break;
         case 'newest':
             sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             break;
