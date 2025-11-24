@@ -261,6 +261,34 @@ app.post('/api/todos/reorder', async (req: Request, res: Response) => {
     }
 });
 
+// Complete all uncompleted todos
+app.post('/api/todos/complete-all', async (req: Request, res: Response) => {
+    const userName = req.query.userName as string;
+
+    try {
+        await db.completeAllTodos(userName);
+        broadcastUpdate('todos-completed-all');
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error completing all todos:', error);
+        res.status(500).json({ error: 'Failed to complete all todos' });
+    }
+});
+
+// Delete all uncompleted todos
+app.post('/api/todos/delete-all-uncompleted', async (req: Request, res: Response) => {
+    const userName = req.query.userName as string;
+
+    try {
+        await db.deleteAllUncompletedTodos(userName);
+        broadcastUpdate('todos-deleted-all-uncompleted');
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting all uncompleted todos:', error);
+        res.status(500).json({ error: 'Failed to delete all uncompleted todos' });
+    }
+});
+
 // Get theme
 app.get('/api/theme', async (req: Request, res: Response) => {
     try {

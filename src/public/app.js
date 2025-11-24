@@ -232,6 +232,20 @@ const API = {
             body: JSON.stringify({ todoIds })
         });
         return res.json();
+    },
+
+    async completeAllTodos() {
+        const res = await fetch(getApiUrl(`api/todos/complete-all?userName=${encodeURIComponent(currentUserId)}`), {
+            method: 'POST'
+        });
+        return res.json();
+    },
+
+    async deleteAllUncompletedTodos() {
+        const res = await fetch(getApiUrl(`api/todos/delete-all-uncompleted?userName=${encodeURIComponent(currentUserId)}`), {
+            method: 'POST'
+        });
+        return res.json();
     }
 };
 
@@ -674,6 +688,32 @@ async function setupAppAfterLogin() {
             await loadTodos();
         }
     });
+
+    // Complete all uncompleted todos
+    const completeAllBtn = document.getElementById('complete-all-btn');
+    completeAllBtn.addEventListener('click', async () => {
+        const uncompletedTodos = await API.getUncompletedTodos();
+        if (uncompletedTodos.length === 0) {
+            return;
+        }
+        if (confirm(`Mark ${uncompletedTodos.length} todo(s) as completed?`)) {
+            await API.completeAllTodos();
+            await loadTodos();
+        }
+    });
+
+    // Clear/Delete all uncompleted todos
+    const clearAllBtn = document.getElementById('clear-all-btn');
+    clearAllBtn.addEventListener('click', async () => {
+        const uncompletedTodos = await API.getUncompletedTodos();
+        if (uncompletedTodos.length === 0) {
+            return;
+        }
+        if (confirm(`Delete ${uncompletedTodos.length} uncompleted todo(s)? This action cannot be undone.`)) {
+            await API.deleteAllUncompletedTodos();
+            await loadTodos();
+        }
+    });
 }
 
 // Setup Server-Sent Events for real-time updates
@@ -700,6 +740,8 @@ function setupSSE() {
                 case 'todo-toggled':
                 case 'todo-deleted':
                 case 'todos-reordered':
+                case 'todos-completed-all':
+                case 'todos-deleted-all-uncompleted':
                     // Reload todos when any change occurs
                     loadTodos();
                     break;

@@ -211,6 +211,36 @@ class TodoDatabase {
     await this.pool.query('UPDATE todos SET cleared = TRUE WHERE completed = TRUE AND cleared = FALSE');
   }
 
+  async completeAllTodos(userName?: string): Promise<void> {
+    if (!this.pool) return;
+    const now = new Date().toISOString();
+
+    if (userName) {
+      await this.pool.query(
+        'UPDATE todos SET completed = TRUE, completed_at = $1 WHERE completed = FALSE AND user_name = $2',
+        [now, userName]
+      );
+    } else {
+      await this.pool.query(
+        'UPDATE todos SET completed = TRUE, completed_at = $1 WHERE completed = FALSE',
+        [now]
+      );
+    }
+  }
+
+  async deleteAllUncompletedTodos(userName?: string): Promise<void> {
+    if (!this.pool) return;
+
+    if (userName) {
+      await this.pool.query(
+        'DELETE FROM todos WHERE completed = FALSE AND user_name = $1',
+        [userName]
+      );
+    } else {
+      await this.pool.query('DELETE FROM todos WHERE completed = FALSE');
+    }
+  }
+
   // User operations
   generateUserId(displayName: string): string {
     // Sanitize the display name for URL use
