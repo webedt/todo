@@ -1,5 +1,4 @@
-import initSqlJs, { Database } from 'sql.js';
-import fs from 'fs';
+import { Pool, PoolClient } from 'pg';
 
 export interface Todo {
   id: number;
@@ -24,159 +23,177 @@ export interface Settings {
 export type Theme = 'dark' | 'light' | 'retro' | 'banana' | 'ice' | 'forest';
 
 class TodoDatabase {
-  private db: Database | null = null;
-  private dbPath: string;
+  private pool: Pool | null = null;
 
-  constructor(dbPath: string = './todos.db') {
-    this.dbPath = dbPath;
+  constructor() {
+    // DATABASE_URL is read from environment variable
   }
 
   async initialize() {
-    const SQL = await initSqlJs();
-
-    // Load existing database or create new one
-    if (fs.existsSync(this.dbPath)) {
-      const buffer = fs.readFileSync(this.dbPath);
-      this.db = new SQL.Database(buffer);
-    } else {
-      this.db = new SQL.Database();
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL environment variable is not set');
     }
 
-    // Create users table
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS users (
-        user_id TEXT PRIMARY KEY,
-        display_name TEXT NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    this.pool = new Pool({
+      connectionString,
+      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false
+    });
 
-    // Create todos table
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS todos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        completed BOOLEAN DEFAULT 0,
-        cleared BOOLEAN DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        completed_at TEXT,
-        user_name TEXT NOT NULL DEFAULT 'Guest'
-      )
-    `);
+    // Test connection
+    const client = await this.pool.connect();
+    try {
+      // Create users table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          user_id TEXT PRIMARY KEY,
+          display_name TEXT NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-    // Create settings table
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      )
-    `);
+      // Create todos table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS todos (
+          id SERIAL PRIMARY KEY,
+          title TEXT NOT NULL,
+          completed BOOLEAN DEFAULT FALSE,
+          cleared BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          completed_at TIMESTAMPTZ,
+          user_name TEXT NOT NULL DEFAULT 'Guest'
+        )
+      `);
 
-    // Set default theme if not exists
-    const result = this.db.exec('SELECT * FROM settings WHERE key = ?', ['theme']);
-    if (result.length === 0 || result[0].values.length === 0) {
-      this.db.run('INSERT INTO settings (key, value) VALUES (?, ?)', ['theme', 'dark']);
+      // Create settings table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      `);
+
+      // Set default theme if not exists
+      const result = await client.query('SELECT * FROM settings WHERE key = $1', ['theme']);
+      if (result.rows.length === 0) {
+        await client.query('INSERT INTO settings (key, value) VALUES ($1, $2)', ['theme', 'dark']);
+      }
+    } finally {
+      client.release();
     }
-
-    this.save();
-  }
-
-  private save(): void {
-    if (!this.db) return;
-    const data = this.db.export();
-    fs.writeFileSync(this.dbPath, data);
   }
 
   // Todo operations
-  getAllTodos(userName?: string): Todo[] {
-    if (!this.db) return [];
+  async getAllTodos(userName?: string): Promise<Todo[]> {
+    if (!this.pool) return [];
     if (userName) {
-      const result = this.db.exec('SELECT * FROM todos WHERE user_name = ? ORDER BY created_at DESC', [userName]);
-      return this.parseResults(result);
+      const result = await this.pool.query(
+        'SELECT * FROM todos WHERE user_name = $1 ORDER BY created_at DESC',
+        [userName]
+      );
+      return result.rows.map(this.mapTodo);
     }
-    const result = this.db.exec('SELECT * FROM todos ORDER BY created_at DESC');
-    return this.parseResults(result);
+    const result = await this.pool.query('SELECT * FROM todos ORDER BY created_at DESC');
+    return result.rows.map(this.mapTodo);
   }
 
-  getUncompletedTodos(userName?: string): Todo[] {
-    if (!this.db) return [];
+  async getUncompletedTodos(userName?: string): Promise<Todo[]> {
+    if (!this.pool) return [];
     if (userName) {
-      const result = this.db.exec('SELECT * FROM todos WHERE completed = 0 AND user_name = ? ORDER BY created_at DESC', [userName]);
-      return this.parseResults(result);
+      const result = await this.pool.query(
+        'SELECT * FROM todos WHERE completed = FALSE AND user_name = $1 ORDER BY created_at DESC',
+        [userName]
+      );
+      return result.rows.map(this.mapTodo);
     }
-    const result = this.db.exec('SELECT * FROM todos WHERE completed = 0 ORDER BY created_at DESC');
-    return this.parseResults(result);
+    const result = await this.pool.query(
+      'SELECT * FROM todos WHERE completed = FALSE ORDER BY created_at DESC'
+    );
+    return result.rows.map(this.mapTodo);
   }
 
-  getCompletedTodos(userName?: string): Todo[] {
-    if (!this.db) return [];
+  async getCompletedTodos(userName?: string): Promise<Todo[]> {
+    if (!this.pool) return [];
     if (userName) {
-      const result = this.db.exec('SELECT * FROM todos WHERE completed = 1 AND cleared = 0 AND user_name = ? ORDER BY completed_at DESC', [userName]);
-      return this.parseResults(result);
+      const result = await this.pool.query(
+        'SELECT * FROM todos WHERE completed = TRUE AND cleared = FALSE AND user_name = $1 ORDER BY completed_at DESC',
+        [userName]
+      );
+      return result.rows.map(this.mapTodo);
     }
-    const result = this.db.exec('SELECT * FROM todos WHERE completed = 1 AND cleared = 0 ORDER BY completed_at DESC');
-    return this.parseResults(result);
+    const result = await this.pool.query(
+      'SELECT * FROM todos WHERE completed = TRUE AND cleared = FALSE ORDER BY completed_at DESC'
+    );
+    return result.rows.map(this.mapTodo);
   }
 
-  addTodo(title: string, userName: string): Todo {
-    if (!this.db) throw new Error('Database not initialized');
+  async addTodo(title: string, userName: string): Promise<Todo> {
+    if (!this.pool) throw new Error('Database not initialized');
 
     const now = new Date().toISOString();
-    this.db.run('INSERT INTO todos (title, created_at, user_name) VALUES (?, ?, ?)', [title, now, userName]);
-    this.save();
-
-    const result = this.db.exec('SELECT * FROM todos ORDER BY id DESC LIMIT 1');
-    return this.parseResults(result)[0];
+    const result = await this.pool.query(
+      'INSERT INTO todos (title, created_at, user_name) VALUES ($1, $2, $3) RETURNING *',
+      [title, now, userName]
+    );
+    return this.mapTodo(result.rows[0]);
   }
 
-  getTodoById(id: number): Todo | undefined {
-    if (!this.db) return undefined;
-    const result = this.db.exec('SELECT * FROM todos WHERE id = ?', [id]);
-    const todos = this.parseResults(result);
-    return todos[0];
+  async getTodoById(id: number): Promise<Todo | undefined> {
+    if (!this.pool) return undefined;
+    const result = await this.pool.query('SELECT * FROM todos WHERE id = $1', [id]);
+    if (result.rows.length === 0) return undefined;
+    return this.mapTodo(result.rows[0]);
   }
 
-  updateTodo(id: number, title: string): void {
-    if (!this.db) return;
-    this.db.run('UPDATE todos SET title = ? WHERE id = ?', [title, id]);
-    this.save();
+  async updateTodo(id: number, title: string): Promise<void> {
+    if (!this.pool) return;
+    await this.pool.query('UPDATE todos SET title = $1 WHERE id = $2', [title, id]);
   }
 
-  toggleTodo(id: number): void {
-    if (!this.db) return;
+  async toggleTodo(id: number): Promise<void> {
+    if (!this.pool) return;
 
-    const todo = this.getTodoById(id);
+    const todo = await this.getTodoById(id);
     if (!todo) return;
 
     if (todo.completed) {
-      this.db.run('UPDATE todos SET completed = 0, completed_at = NULL WHERE id = ?', [id]);
+      await this.pool.query(
+        'UPDATE todos SET completed = FALSE, completed_at = NULL WHERE id = $1',
+        [id]
+      );
     } else {
       const now = new Date().toISOString();
-      this.db.run('UPDATE todos SET completed = 1, completed_at = ? WHERE id = ?', [now, id]);
+      await this.pool.query(
+        'UPDATE todos SET completed = TRUE, completed_at = $1 WHERE id = $2',
+        [now, id]
+      );
     }
-    this.save();
   }
 
-  deleteTodo(id: number): void {
-    if (!this.db) return;
-    this.db.run('DELETE FROM todos WHERE id = ?', [id]);
-    this.save();
+  async deleteTodo(id: number): Promise<void> {
+    if (!this.pool) return;
+    await this.pool.query('DELETE FROM todos WHERE id = $1', [id]);
   }
 
-  searchTodos(query: string, userName?: string): Todo[] {
-    if (!this.db) return [];
+  async searchTodos(query: string, userName?: string): Promise<Todo[]> {
+    if (!this.pool) return [];
     if (userName) {
-      const result = this.db.exec('SELECT * FROM todos WHERE title LIKE ? AND user_name = ? ORDER BY created_at DESC', [`%${query}%`, userName]);
-      return this.parseResults(result);
+      const result = await this.pool.query(
+        'SELECT * FROM todos WHERE title ILIKE $1 AND user_name = $2 ORDER BY created_at DESC',
+        [`%${query}%`, userName]
+      );
+      return result.rows.map(this.mapTodo);
     }
-    const result = this.db.exec('SELECT * FROM todos WHERE title LIKE ? ORDER BY created_at DESC', [`%${query}%`]);
-    return this.parseResults(result);
+    const result = await this.pool.query(
+      'SELECT * FROM todos WHERE title ILIKE $1 ORDER BY created_at DESC',
+      [`%${query}%`]
+    );
+    return result.rows.map(this.mapTodo);
   }
 
-  clearCompletedTodos(): void {
-    if (!this.db) return;
-    this.db.run('UPDATE todos SET cleared = 1 WHERE completed = 1 AND cleared = 0');
-    this.save();
+  async clearCompletedTodos(): Promise<void> {
+    if (!this.pool) return;
+    await this.pool.query('UPDATE todos SET cleared = TRUE WHERE completed = TRUE AND cleared = FALSE');
   }
 
   // User operations
@@ -197,15 +214,16 @@ class TodoDatabase {
     return `${sanitized}-${randomSuffix}`;
   }
 
-  createUser(displayName: string): User {
-    if (!this.db) throw new Error('Database not initialized');
+  async createUser(displayName: string): Promise<User> {
+    if (!this.pool) throw new Error('Database not initialized');
 
     const userId = this.generateUserId(displayName);
     const now = new Date().toISOString();
 
-    this.db.run('INSERT INTO users (user_id, display_name, created_at) VALUES (?, ?, ?)',
-      [userId, displayName, now]);
-    this.save();
+    await this.pool.query(
+      'INSERT INTO users (user_id, display_name, created_at) VALUES ($1, $2, $3)',
+      [userId, displayName, now]
+    );
 
     return {
       userId,
@@ -214,54 +232,35 @@ class TodoDatabase {
     };
   }
 
-  getUserById(userId: string): User | undefined {
-    if (!this.db) return undefined;
-    const result = this.db.exec('SELECT * FROM users WHERE user_id = ?', [userId]);
-    if (result.length === 0 || result[0].values.length === 0) return undefined;
+  async getUserById(userId: string): Promise<User | undefined> {
+    if (!this.pool) return undefined;
+    const result = await this.pool.query('SELECT * FROM users WHERE user_id = $1', [userId]);
+    if (result.rows.length === 0) return undefined;
 
-    const row = result[0].values[0];
-    const columns = result[0].columns;
-    const obj: any = {};
-    columns.forEach((col: string, i: number) => {
-      obj[col] = row[i];
-    });
-
+    const row = result.rows[0];
     return {
-      userId: obj.user_id,
-      displayName: obj.display_name,
-      createdAt: obj.created_at
+      userId: row.user_id,
+      displayName: row.display_name,
+      createdAt: row.created_at
     };
   }
 
   // Settings operations
-  getTheme(): Theme {
-    if (!this.db) return 'dark';
-    const result = this.db.exec('SELECT value FROM settings WHERE key = ?', ['theme']);
-    if (result.length > 0 && result[0].values.length > 0) {
-      return result[0].values[0][0] as Theme;
+  async getTheme(): Promise<Theme> {
+    if (!this.pool) return 'dark';
+    const result = await this.pool.query('SELECT value FROM settings WHERE key = $1', ['theme']);
+    if (result.rows.length > 0) {
+      return result.rows[0].value as Theme;
     }
     return 'dark';
   }
 
-  setTheme(theme: Theme): void {
-    if (!this.db) return;
-    this.db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['theme', theme]);
-    this.save();
-  }
-
-  private parseResults(result: any[]): Todo[] {
-    if (result.length === 0) return [];
-
-    const columns = result[0].columns;
-    const values = result[0].values;
-
-    return values.map((row: any[]) => {
-      const obj: any = {};
-      columns.forEach((col: string, i: number) => {
-        obj[col] = row[i];
-      });
-      return this.mapTodo(obj);
-    });
+  async setTheme(theme: Theme): Promise<void> {
+    if (!this.pool) return;
+    await this.pool.query(
+      'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+      ['theme', theme]
+    );
   }
 
   private mapTodo(row: any): Todo {
@@ -276,10 +275,9 @@ class TodoDatabase {
     };
   }
 
-  close(): void {
-    if (this.db) {
-      this.save();
-      this.db.close();
+  async close(): Promise<void> {
+    if (this.pool) {
+      await this.pool.end();
     }
   }
 }
