@@ -24,6 +24,27 @@ header {
     gap: 15px;
 }
 
+.header-left,
+.header-center,
+.header-right {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.header-left {
+    justify-content: flex-start;
+}
+
+.header-center {
+    justify-content: center;
+}
+
+.header-right {
+    justify-content: flex-end;
+    gap: 15px;
+}
+
 .info-notice {
     padding: 8px 12px;
     border-radius: 6px;
@@ -69,13 +90,6 @@ header {
 
 .info-close:hover {
     opacity: 1;
-}
-
-.header-controls {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
 }
 
 h1 {
