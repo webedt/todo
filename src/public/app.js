@@ -956,7 +956,7 @@ function updateThemeEmoji(theme) {
 
 // View mode management
 function getViewMode() {
-    return localStorage.getItem('viewMode') || 'advanced';
+    return localStorage.getItem('viewMode') || 'minimal';
 }
 
 function setViewMode(mode) {
