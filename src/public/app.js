@@ -1026,6 +1026,7 @@ function setScale(scale) {
         document.body.style.removeProperty('transform-origin');
         document.body.style.removeProperty('width');
         document.body.style.removeProperty('min-width');
+        document.body.style.removeProperty('padding');
         container.style.removeProperty('max-width');
         document.documentElement.style.removeProperty('overflow-x');
     } else {
@@ -1038,16 +1039,18 @@ function setScale(scale) {
             document.body.style.transformOrigin = 'top left';
             document.body.style.width = `${100 / scaleNum}vw`;
             document.body.style.removeProperty('min-width');
+            document.body.style.removeProperty('padding');
             // Inverse scale the container max-width to maintain visual width
             container.style.maxWidth = `${800 / scaleNum}px`;
             // Prevent horizontal scrolling
             document.documentElement.style.overflowX = 'hidden';
         } else {
-            // For scales larger than 1x, use natural width with minimum of screen width
+            // For scales larger than 1x, use natural width with minimum of screen width and reduce padding
             document.body.style.transform = `scale(${scale})`;
             document.body.style.transformOrigin = 'top left';
             document.body.style.removeProperty('width');
             document.body.style.minWidth = '100vw';
+            document.body.style.padding = '10px'; // Reduce padding to minimize scrolling
             container.style.maxWidth = '800px';
             document.documentElement.style.overflowX = 'auto';
         }
@@ -1112,6 +1115,7 @@ async function init() {
         document.body.style.removeProperty('transform-origin');
         document.body.style.removeProperty('width');
         document.body.style.removeProperty('min-width');
+        document.body.style.removeProperty('padding');
         container.style.removeProperty('max-width');
         document.documentElement.style.removeProperty('overflow-x');
         updateScaleText(scale);
