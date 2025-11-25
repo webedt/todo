@@ -1020,16 +1020,11 @@ function setScale(scale) {
     const container = document.querySelector('.container');
 
     if (scaleNum === 1) {
-        // For 1x, set explicit values to ensure same state whether starting or returning
+        // For 1x, remove ALL inline styles to return to pure CSS state
         localStorage.removeItem('scale');
-        document.body.style.transform = 'none';
-        document.body.style.transformOrigin = 'top left';
-        document.body.style.width = '100vw';
-        document.body.style.removeProperty('min-width');
-        document.body.style.removeProperty('padding');
-        container.style.removeProperty('max-width');
-        container.style.removeProperty('margin');
-        document.documentElement.style.overflowX = 'hidden';
+        document.body.removeAttribute('style');
+        container.removeAttribute('style');
+        document.documentElement.style.removeProperty('overflow-x');
     } else {
         // Save non-1x scales to localStorage
         localStorage.setItem('scale', scale);
