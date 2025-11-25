@@ -10,7 +10,11 @@ body {
     padding: 20px;
 }
 
-/* Scale classes - 1x is default (no class) */
+/* Scale classes */
+body.scale-1 {
+    transform: none;
+}
+
 body.scale-0-5 {
     transform: scale(0.5);
     transform-origin: top left;

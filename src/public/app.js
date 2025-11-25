@@ -1018,6 +1018,7 @@ function getScale() {
 // Scale class names
 const scaleClasses = {
     '0.5': 'scale-0-5',
+    '1': 'scale-1',
     '1.5': 'scale-1-5'
 };
 
@@ -1025,16 +1026,16 @@ function setScale(scale) {
     // Remove all scale classes
     Object.values(scaleClasses).forEach(cls => document.body.classList.remove(cls));
 
+    // Always add the appropriate scale class
+    const scaleClass = scaleClasses[scale];
+    if (scaleClass) {
+        document.body.classList.add(scaleClass);
+    }
+
     if (scale === '1') {
-        // For 1x, just remove classes - use pure CSS defaults
         localStorage.removeItem('scale');
     } else {
-        // Add the appropriate scale class
         localStorage.setItem('scale', scale);
-        const scaleClass = scaleClasses[scale];
-        if (scaleClass) {
-            document.body.classList.add(scaleClass);
-        }
     }
 
     updateScaleText(scale);
