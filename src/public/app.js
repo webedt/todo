@@ -1050,7 +1050,7 @@ function setScale(scale) {
             document.body.style.transformOrigin = 'top left';
             document.body.style.removeProperty('width');
             document.body.style.minWidth = '100vw';
-            document.body.style.padding = '10px'; // Reduce padding to minimize scrolling
+            document.body.style.padding = '10px 0'; // Only top/bottom padding, no left/right
             container.style.maxWidth = '800px';
             document.documentElement.style.overflowX = 'auto';
         }
