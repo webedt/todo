@@ -1020,10 +1020,15 @@ function setScale(scale) {
     const container = document.querySelector('.container');
 
     if (scaleNum === 1) {
-        // For 1x, remove ALL inline styles to return to pure CSS state
+        // For 1x, remove only the specific properties we set for scaling
         localStorage.removeItem('scale');
-        document.body.removeAttribute('style');
-        container.removeAttribute('style');
+        document.body.style.removeProperty('transform');
+        document.body.style.removeProperty('transform-origin');
+        document.body.style.removeProperty('width');
+        document.body.style.removeProperty('min-width');
+        document.body.style.removeProperty('padding');
+        container.style.removeProperty('max-width');
+        container.style.removeProperty('margin');
         document.documentElement.style.removeProperty('overflow-x');
     } else {
         // Save non-1x scales to localStorage
@@ -1104,9 +1109,13 @@ async function init() {
     });
 
     // Load and apply scale
-    // Always call setScale to ensure consistent state at any scale
     const scale = getScale();
-    setScale(scale);
+    if (scale === '1') {
+        // At 1x on init, don't touch any styles - just update the text
+        updateScaleText(scale);
+    } else {
+        setScale(scale);
+    }
 
     // Set up scale toggle button
     document.getElementById('scale-toggle').addEventListener('click', () => {
