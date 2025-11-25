@@ -1047,15 +1047,16 @@ function setScale(scale) {
             // Prevent horizontal scrolling
             document.documentElement.style.overflowX = 'hidden';
         } else {
-            // For scales larger than 1x, scale from top left with scrollable overflow
+            // For scales larger than 1x, set body width so after scaling it equals viewport
+            // This allows the container to center properly within the scaled body
             document.body.style.transform = `scale(${scale})`;
             document.body.style.transformOrigin = 'top left';
-            document.body.style.removeProperty('width');
+            document.body.style.width = `${100 / scaleNum}vw`;
             document.body.style.removeProperty('min-width');
             document.body.style.removeProperty('padding');
             container.style.removeProperty('max-width');
             container.style.removeProperty('margin');
-            document.documentElement.style.overflowX = 'auto';
+            document.documentElement.style.overflowX = 'hidden';
         }
     }
 
