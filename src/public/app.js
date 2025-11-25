@@ -1047,14 +1047,14 @@ function setScale(scale) {
             // Prevent horizontal scrolling
             document.documentElement.style.overflowX = 'hidden';
         } else {
-            // For scales larger than 1x, let container center naturally
+            // For scales larger than 1x, scale from top center to keep centered
             document.body.style.transform = `scale(${scale})`;
-            document.body.style.transformOrigin = 'top left';
+            document.body.style.transformOrigin = 'top center';
             document.body.style.removeProperty('width');
             document.body.style.removeProperty('min-width');
             document.body.style.removeProperty('padding');
-            container.style.maxWidth = '800px';
-            container.style.margin = '0 auto'; // Center horizontally
+            container.style.removeProperty('max-width');
+            container.style.removeProperty('margin');
             document.documentElement.style.overflowX = 'hidden';
         }
     }
