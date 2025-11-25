@@ -1020,16 +1020,16 @@ function setScale(scale) {
     const container = document.querySelector('.container');
 
     if (scaleNum === 1) {
-        // For 1x, remove from localStorage and remove all scaling styles
+        // For 1x, set explicit values to ensure same state whether starting or returning
         localStorage.removeItem('scale');
-        document.body.style.removeProperty('transform');
-        document.body.style.removeProperty('transform-origin');
-        document.body.style.removeProperty('width');
+        document.body.style.transform = 'none';
+        document.body.style.transformOrigin = 'top left';
+        document.body.style.width = '100vw';
         document.body.style.removeProperty('min-width');
         document.body.style.removeProperty('padding');
         container.style.removeProperty('max-width');
         container.style.removeProperty('margin');
-        document.documentElement.style.removeProperty('overflow-x');
+        document.documentElement.style.overflowX = 'hidden';
     } else {
         // Save non-1x scales to localStorage
         localStorage.setItem('scale', scale);
@@ -1109,22 +1109,9 @@ async function init() {
     });
 
     // Load and apply scale
+    // Always call setScale to ensure consistent state at any scale
     const scale = getScale();
-    if (scale !== '1') {
-        setScale(scale);
-    } else {
-        // Even at 1x, ensure all scale properties are cleared
-        const container = document.querySelector('.container');
-        document.body.style.removeProperty('transform');
-        document.body.style.removeProperty('transform-origin');
-        document.body.style.removeProperty('width');
-        document.body.style.removeProperty('min-width');
-        document.body.style.removeProperty('padding');
-        container.style.removeProperty('max-width');
-        container.style.removeProperty('margin');
-        document.documentElement.style.removeProperty('overflow-x');
-        updateScaleText(scale);
-    }
+    setScale(scale);
 
     // Set up scale toggle button
     document.getElementById('scale-toggle').addEventListener('click', () => {
