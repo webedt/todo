@@ -1047,15 +1047,15 @@ function setScale(scale) {
             // Prevent horizontal scrolling
             document.documentElement.style.overflowX = 'hidden';
         } else {
-            // For scales larger than 1x, use natural width with minimum of screen width and reduce padding
+            // For scales larger than 1x, let container center naturally
             document.body.style.transform = `scale(${scale})`;
             document.body.style.transformOrigin = 'top left';
             document.body.style.removeProperty('width');
-            document.body.style.minWidth = '100vw';
-            document.body.style.padding = '10px 0'; // Only top/bottom padding, no left/right
+            document.body.style.removeProperty('min-width');
+            document.body.style.removeProperty('padding');
             container.style.maxWidth = '800px';
-            container.style.margin = '0 auto'; // Center horizontally, no vertical margins
-            document.documentElement.style.overflowX = 'auto';
+            container.style.margin = '0 auto'; // Center horizontally
+            document.documentElement.style.overflowX = 'hidden';
         }
     }
 
