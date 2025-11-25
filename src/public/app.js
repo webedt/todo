@@ -1015,67 +1015,25 @@ function getScale() {
     return localStorage.getItem('scale') || '1';
 }
 
-// Store initial 1x styles captured at startup
-let initialStyles = null;
-
-function captureInitialStyles() {
-    const container = document.querySelector('.container');
-    const bodyComputed = getComputedStyle(document.body);
-    const containerComputed = getComputedStyle(container);
-
-    initialStyles = {
-        body: {
-            width: bodyComputed.width,
-            minWidth: bodyComputed.minWidth,
-            padding: bodyComputed.padding
-        },
-        container: {
-            maxWidth: containerComputed.maxWidth,
-            margin: containerComputed.margin
-        }
-    };
-}
+// Scale class names
+const scaleClasses = {
+    '0.5': 'scale-0-5',
+    '1.5': 'scale-1-5'
+};
 
 function setScale(scale) {
-    const scaleNum = parseFloat(scale);
-    const container = document.querySelector('.container');
+    // Remove all scale classes
+    Object.values(scaleClasses).forEach(cls => document.body.classList.remove(cls));
 
-    if (scaleNum === 1) {
-        // For 1x, restore the exact initial styles captured at startup
+    if (scale === '1') {
+        // For 1x, just remove classes - use pure CSS defaults
         localStorage.removeItem('scale');
-        document.body.style.transform = 'none';
-        document.body.style.transformOrigin = '';
-        document.body.style.width = initialStyles.body.width;
-        document.body.style.minWidth = initialStyles.body.minWidth;
-        document.body.style.padding = initialStyles.body.padding;
-        container.style.maxWidth = initialStyles.container.maxWidth;
-        container.style.margin = initialStyles.container.margin;
-        document.documentElement.style.overflowX = '';
     } else {
-        // Save non-1x scales to localStorage
+        // Add the appropriate scale class
         localStorage.setItem('scale', scale);
-
-        if (scaleNum < 1) {
-            // For scales smaller than 1x, inverse scale the width to maintain same width as 1x
-            document.body.style.transform = `scale(${scale})`;
-            document.body.style.transformOrigin = 'top left';
-            document.body.style.width = `${100 / scaleNum}vw`;
-            document.body.style.minWidth = '';
-            document.body.style.padding = '';
-            // Inverse scale the container max-width to maintain visual width
-            container.style.maxWidth = `${800 / scaleNum}px`;
-            container.style.margin = '';
-            document.documentElement.style.overflowX = 'hidden';
-        } else {
-            // For scales larger than 1x, set body width so after scaling it equals viewport
-            document.body.style.transform = `scale(${scale})`;
-            document.body.style.transformOrigin = 'top left';
-            document.body.style.width = `${100 / scaleNum}vw`;
-            document.body.style.minWidth = '';
-            document.body.style.padding = '';
-            container.style.maxWidth = '';
-            container.style.margin = '';
-            document.documentElement.style.overflowX = 'hidden';
+        const scaleClass = scaleClasses[scale];
+        if (scaleClass) {
+            document.body.classList.add(scaleClass);
         }
     }
 
@@ -1127,17 +1085,9 @@ async function init() {
         cycleViewMode();
     });
 
-    // Capture initial styles before any scaling is applied
-    captureInitialStyles();
-
-    // Load and apply scale
+    // Load and apply scale (uses CSS classes, no inline styles)
     const scale = getScale();
-    if (scale === '1') {
-        // At 1x on init, don't touch any styles - just update the text
-        updateScaleText(scale);
-    } else {
-        setScale(scale);
-    }
+    setScale(scale);
 
     // Set up scale toggle button
     document.getElementById('scale-toggle').addEventListener('click', () => {

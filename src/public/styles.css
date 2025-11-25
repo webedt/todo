@@ -10,6 +10,28 @@ body {
     padding: 20px;
 }
 
+/* Scale classes - 1x is default (no class) */
+body.scale-0-5 {
+    transform: scale(0.5);
+    transform-origin: top left;
+    width: 200vw;
+}
+
+body.scale-0-5 .container {
+    max-width: 1600px;
+}
+
+body.scale-1-5 {
+    transform: scale(1.5);
+    transform-origin: top left;
+    width: 66.667vw;
+}
+
+html:has(body.scale-0-5),
+html:has(body.scale-1-5) {
+    overflow-x: hidden;
+}
+
 .container {
     max-width: 800px;
     margin: 0 auto;
