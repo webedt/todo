@@ -1015,21 +1015,42 @@ function getScale() {
     return localStorage.getItem('scale') || '1';
 }
 
+// Store initial 1x styles captured at startup
+let initialStyles = null;
+
+function captureInitialStyles() {
+    const container = document.querySelector('.container');
+    const bodyComputed = getComputedStyle(document.body);
+    const containerComputed = getComputedStyle(container);
+
+    initialStyles = {
+        body: {
+            width: bodyComputed.width,
+            minWidth: bodyComputed.minWidth,
+            padding: bodyComputed.padding
+        },
+        container: {
+            maxWidth: containerComputed.maxWidth,
+            margin: containerComputed.margin
+        }
+    };
+}
+
 function setScale(scale) {
     const scaleNum = parseFloat(scale);
     const container = document.querySelector('.container');
 
     if (scaleNum === 1) {
-        // For 1x, remove only the specific properties we set for scaling
+        // For 1x, restore the exact initial styles captured at startup
         localStorage.removeItem('scale');
-        document.body.style.removeProperty('transform');
-        document.body.style.removeProperty('transform-origin');
-        document.body.style.removeProperty('width');
-        document.body.style.removeProperty('min-width');
-        document.body.style.removeProperty('padding');
-        container.style.removeProperty('max-width');
-        container.style.removeProperty('margin');
-        document.documentElement.style.removeProperty('overflow-x');
+        document.body.style.transform = 'none';
+        document.body.style.transformOrigin = '';
+        document.body.style.width = initialStyles.body.width;
+        document.body.style.minWidth = initialStyles.body.minWidth;
+        document.body.style.padding = initialStyles.body.padding;
+        container.style.maxWidth = initialStyles.container.maxWidth;
+        container.style.margin = initialStyles.container.margin;
+        document.documentElement.style.overflowX = '';
     } else {
         // Save non-1x scales to localStorage
         localStorage.setItem('scale', scale);
@@ -1039,23 +1060,21 @@ function setScale(scale) {
             document.body.style.transform = `scale(${scale})`;
             document.body.style.transformOrigin = 'top left';
             document.body.style.width = `${100 / scaleNum}vw`;
-            document.body.style.removeProperty('min-width');
-            document.body.style.removeProperty('padding');
+            document.body.style.minWidth = '';
+            document.body.style.padding = '';
             // Inverse scale the container max-width to maintain visual width
             container.style.maxWidth = `${800 / scaleNum}px`;
-            container.style.removeProperty('margin'); // Keep default centered margins
-            // Prevent horizontal scrolling
+            container.style.margin = '';
             document.documentElement.style.overflowX = 'hidden';
         } else {
             // For scales larger than 1x, set body width so after scaling it equals viewport
-            // This allows the container to center properly within the scaled body
             document.body.style.transform = `scale(${scale})`;
             document.body.style.transformOrigin = 'top left';
             document.body.style.width = `${100 / scaleNum}vw`;
-            document.body.style.removeProperty('min-width');
-            document.body.style.removeProperty('padding');
-            container.style.removeProperty('max-width');
-            container.style.removeProperty('margin');
+            document.body.style.minWidth = '';
+            document.body.style.padding = '';
+            container.style.maxWidth = '';
+            container.style.margin = '';
             document.documentElement.style.overflowX = 'hidden';
         }
     }
@@ -1107,6 +1126,9 @@ async function init() {
     document.getElementById('view-toggle').addEventListener('click', () => {
         cycleViewMode();
     });
+
+    // Capture initial styles before any scaling is applied
+    captureInitialStyles();
 
     // Load and apply scale
     const scale = getScale();
