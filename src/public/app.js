@@ -1047,15 +1047,15 @@ function setScale(scale) {
             // Prevent horizontal scrolling
             document.documentElement.style.overflowX = 'hidden';
         } else {
-            // For scales larger than 1x, scale from top center to keep centered
+            // For scales larger than 1x, scale from top left with scrollable overflow
             document.body.style.transform = `scale(${scale})`;
-            document.body.style.transformOrigin = 'top center';
+            document.body.style.transformOrigin = 'top left';
             document.body.style.removeProperty('width');
             document.body.style.removeProperty('min-width');
             document.body.style.removeProperty('padding');
             container.style.removeProperty('max-width');
             container.style.removeProperty('margin');
-            document.documentElement.style.overflowX = 'hidden';
+            document.documentElement.style.overflowX = 'auto';
         }
     }
 
