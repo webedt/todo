@@ -1054,7 +1054,7 @@ function setScale(scale) {
             document.body.style.minWidth = '100vw';
             document.body.style.padding = '10px 0'; // Only top/bottom padding, no left/right
             container.style.maxWidth = '800px';
-            container.style.margin = '0'; // Remove auto margins to eliminate side spacing
+            container.style.margin = '0 auto'; // Center horizontally, no vertical margins
             document.documentElement.style.overflowX = 'auto';
         }
     }
