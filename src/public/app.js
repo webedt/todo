@@ -1028,6 +1028,7 @@ function setScale(scale) {
         document.body.style.removeProperty('min-width');
         document.body.style.removeProperty('padding');
         container.style.removeProperty('max-width');
+        container.style.removeProperty('margin');
         document.documentElement.style.removeProperty('overflow-x');
     } else {
         // Save non-1x scales to localStorage
@@ -1042,6 +1043,7 @@ function setScale(scale) {
             document.body.style.removeProperty('padding');
             // Inverse scale the container max-width to maintain visual width
             container.style.maxWidth = `${800 / scaleNum}px`;
+            container.style.removeProperty('margin'); // Keep default centered margins
             // Prevent horizontal scrolling
             document.documentElement.style.overflowX = 'hidden';
         } else {
@@ -1052,6 +1054,7 @@ function setScale(scale) {
             document.body.style.minWidth = '100vw';
             document.body.style.padding = '10px 0'; // Only top/bottom padding, no left/right
             container.style.maxWidth = '800px';
+            container.style.margin = '0'; // Remove auto margins to eliminate side spacing
             document.documentElement.style.overflowX = 'auto';
         }
     }
@@ -1117,6 +1120,7 @@ async function init() {
         document.body.style.removeProperty('min-width');
         document.body.style.removeProperty('padding');
         container.style.removeProperty('max-width');
+        container.style.removeProperty('margin');
         document.documentElement.style.removeProperty('overflow-x');
         updateScaleText(scale);
     }
